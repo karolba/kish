@@ -1,6 +1,6 @@
 # `kish` - a simple shell, aspiring to be fully POSIX-compatibile in the future
 
-What currently works:
+### What currently works:
 - simple commands
 - quoting
 - redirections (`> file`)
