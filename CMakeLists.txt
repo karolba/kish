@@ -13,4 +13,6 @@ add_executable(kish
     CommandExpander.cpp
     utils.cpp
     Global.cpp
+    builtins.cpp
+    executor.cpp
 )
