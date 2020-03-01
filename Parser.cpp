@@ -116,7 +116,7 @@ void Parser::read_commit_compound_command_list()
 
     size_t displacement;
     std::tie(get_compound_command()->command_list, displacement) = Parser(sub_tokens).parse_compound_command_list();
-    m_input_i += displacement; // TODO: - 1? + 1?
+    m_input_i += displacement;
 }
 
 Token* Parser::input_next_token()

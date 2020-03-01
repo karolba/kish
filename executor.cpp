@@ -250,8 +250,6 @@ static void exec_expanded_simple_command(const Command &expanded_command, const 
         }
     }
 
-    // TODO: ordered redirections and rewirings
-
     char **argv = new char*[expanded_simple.argv.size() + 1];
     for(size_t i = 0; i < expanded_simple.argv.size(); ++i) {
         argv[i] = strdup(expanded_simple.argv.at(i).c_str());
@@ -352,7 +350,7 @@ static void run_builitin_in_main_process(BuiltinHandler &builtin, const Command 
     const auto &simple_command = std::get<Command::Simple>(expanded_command.value);
 
     auto old_fds = setup_redirections_save_old_fds(expanded_command.redirections);
-    builtin(simple_command);
+    g.last_return_value = builtin(simple_command);
     restore_old_fds(old_fds);
 }
 
