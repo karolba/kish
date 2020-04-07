@@ -14,7 +14,7 @@ int main(int argc, char *argv[]) {
     initialize_variables();
 
     if(argc == 3 && strcmp(argv[1], "-c") == 0) {
-        run_from_string(argv[1]);
+        run_from_string(argv[2]);
     } else {
         std::string input_line;
         while(std::cout << "$ " << std::flush && std::getline(std::cin, input_line)) {

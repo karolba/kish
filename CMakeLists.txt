@@ -22,4 +22,8 @@ add_executable(kish
     Global.cpp
     builtins.cpp
     executor.cpp
+    builtins/true.cpp
+    builtins/false.cpp
+    builtins/help.cpp
+    builtins/cd.cpp
 )

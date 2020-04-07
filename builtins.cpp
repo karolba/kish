@@ -1,22 +1,9 @@
 #include "builtins.h"
 
-#include <optional>
-#include <functional>
-#include <string>
-#include "Parser.h"
-
-static int builtin_false(const Command::Simple &) {
-    return 1;
-}
-
-static int builtin_true(const Command::Simple &) {
-    return 0;
-}
-
-static int builtin_help(const Command::Simple &) {
-    fprintf(stdout, "This is some help\n");
-    return 0;
-}
+#include "builtins/false.h"
+#include "builtins/true.h"
+#include "builtins/help.h"
+#include "builtins/cd.h"
 
 std::optional<BuiltinHandler> find_builtin(const std::string &name) {
     if(name == "false")
@@ -27,6 +14,9 @@ std::optional<BuiltinHandler> find_builtin(const std::string &name) {
 
     if(name == "help")
         return builtin_help;
+
+    if(name == "cd")
+        return builtin_cd;
 
     return {};
 }
