@@ -10,6 +10,10 @@ void initialize_variables() {
     g.variables["$"] = std::to_string(getpid());
 }
 
+static bool echo_prompt() {
+    return !!(std::cout << get_current_dir_name() << " $ " << std::flush);
+}
+
 int main(int argc, char *argv[]) {
     initialize_variables();
 
@@ -17,7 +21,7 @@ int main(int argc, char *argv[]) {
         run_from_string(argv[2]);
     } else {
         std::string input_line;
-        while(std::cout << "$ " << std::flush && std::getline(std::cin, input_line)) {
+        while(echo_prompt() && std::getline(std::cin, input_line)) {
             run_from_string(input_line);
         }
     }
