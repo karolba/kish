@@ -64,7 +64,7 @@ int builtin_cd(const Command::Simple &cmd) {
         argv.erase(argv.begin() + 1);
     }
 
-    if(cmd.argv.size() > 2) {
+    if(argv.size() > 2) {
         fprintf(stderr, "cd: too many arguments\n");
         usage();
         return 1;
@@ -74,17 +74,17 @@ int builtin_cd(const Command::Simple &cmd) {
 
     // 1. If no directory operand is given and the HOME environment variable is empty or undefined,
     // the default behavior is implementation-defined and no further steps shall be taken.
-    if(cmd.argv.size() <= 1 && (getenv("HOME") == nullptr || strcmp(getenv("HOME"), "") == 0)) {
+    if(argv.size() <= 1 && (getenv("HOME") == nullptr || strcmp(getenv("HOME"), "") == 0)) {
         return 0;
     }
 
     // 2. If no directory operand is given and the HOME environment variable is set to a non-empty value,
     // the cd utility shall behave as if the directory named in the HOME environment variable was specified as the directory operand.
     std::string directory_operand;
-    if(cmd.argv.size() <= 1) {
+    if(argv.size() <= 1) {
         directory_operand = getenv("HOME");
     } else {
-        directory_operand = cmd.argv.at(2);
+        directory_operand = argv.at(1);
     }
 
     // 3. If the directory operand begins with a <slash> character, set curpath to the operand and proceed to step 7.
