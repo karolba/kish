@@ -270,7 +270,7 @@ static void expand_and_exec_empty_command(const Command &cmd) {
 }
 
 [[noreturn]]
-static void expand_and_exec_simple_command(const Command &cmd) {
+static void expand_and_exec_simple_command(Command cmd) {
     const Command::Simple &simple_command = std::get<Command::Simple>(cmd.value);
 
     // `a=b` without any commands
@@ -300,8 +300,7 @@ static void expand_and_exec_simple_command(const Command &cmd) {
     }
 
     // when we are a part of a multi-command pipeline, every substitution happens in a subshell
-    Command expanded = cmd;
-    if(!CommandExpander(&expanded).expand()) {
+    if(!CommandExpander(&cmd).expand()) {
         fprintf(stderr, "Command expansion failed\n");
         exit(1);
     }
@@ -310,8 +309,7 @@ static void expand_and_exec_simple_command(const Command &cmd) {
 }
 
 [[noreturn]]
-static void expand_and_exec_compound_command(const Command &cmd) {
-    Command expanded = cmd;
+static void expand_and_exec_compound_command(Command expanded) {
     // expand redirections:
     if(!CommandExpander(&expanded).expand()) {
         fprintf(stderr, "Command expansion failed\n");
@@ -389,9 +387,7 @@ static void run_empty_simple_command_expand_in_main_process(const Command &cmd) 
 }
 
 // Runs non-pipelined simple commands (e.g. `a=b c d >e`) that have argv in them
-static void run_nonempty_simple_command_expand_in_main_process(const Command &cmd) {
-    Command expanded = cmd;
-
+static void run_nonempty_simple_command_expand_in_main_process(Command expanded) {
     if(!CommandExpander(&expanded).expand()) {
         fprintf(stderr, "Command expansion failed\n");
         g.last_return_value = 1;
