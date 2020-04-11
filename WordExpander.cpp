@@ -61,7 +61,7 @@ bool WordExpander::expand_into(std::vector<std::string> &out)
             // TODO: ${}, $() and $(())
             std::string var_name = consume_variable_name();
             if (! var_name.empty()) {
-                expand_variable(var_name, true);
+                expand_variable(var_name, false);
             } else {
                 m_current_word.push_back(ch);
             }
