@@ -151,7 +151,7 @@ void WordExpander::expand_variable(const std::string &variable_name, bool in_dou
 
 void WordExpander::delimit_word()
 {
-    if (m_current_word.length() != 0 || m_current_word_can_be_empty_expansion) {
+    if (m_current_word.length() != 0 || !m_current_word_can_be_empty_expansion) {
         m_out->push_back(m_current_word);
         m_current_word.clear();
     }
