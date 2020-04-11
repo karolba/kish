@@ -30,12 +30,12 @@ void Parser::commit_assignment(const std::string &assignment)
     size_t equals_pos = assignment.find('=');
     std::string name = assignment.substr(0, equals_pos);
     std::string value = assignment.substr(equals_pos + 1);
-    get_simple_command()->variable_assignments.push_back({name, value});
+    get_simple_command().variable_assignments.push_back({name, value});
 }
 
 void Parser::commit_argument(const std::string &word)
 {
-    get_simple_command()->argv.push_back(word);
+    get_simple_command().argv.push_back(word);
 }
 
 void Parser::commit_redirection(const std::string &op)
@@ -51,7 +51,7 @@ void Parser::commit_redirection(const std::string &op)
         fd = 0;
     }
 
-    Token *next = input_next_token();
+    const Token *next = input_next_token();
     if (next == nullptr) {
         throw SyntaxError{"End of input after a redirection operator"};
     }
@@ -70,15 +70,9 @@ void Parser::commit_command()
     }
 
     if(std::holds_alternative<Command::Simple>(m_command.value)) {
-        if (get_simple_command()->variable_assignments.empty()
-                && get_simple_command()->argv.empty()
+        if (get_simple_command().variable_assignments.empty()
+                && get_simple_command().argv.empty()
                 && m_command.redirections.empty())
-            return;
-    }
-
-    if(std::holds_alternative<Command::Compound>(m_command.value)) {
-        if(m_command.redirections.empty()
-                && get_compound_command()->command_list.empty())
             return;
     }
 
@@ -106,20 +100,36 @@ void Parser::commit_and_or_list(const Token* op)
 
 void Parser::read_commit_compound_command_list()
 {
-    if(!get_compound_command()->command_list.empty()) {
-        // `{ command; } { command; }`
-        throw SyntaxError{"Multiple command lists in one command are not allowed, did you forget a ';'?"};
+    if(!get_compound_command().command_list.empty()) {
+        // TODO: Could this ever happen?
+        throw SyntaxError{"Multiple command lists in one command?"};
     }
 
-    auto i = static_cast<std::vector<Token>::difference_type>(m_input_i);
-    std::vector<Token> sub_tokens = std::vector(m_input.cbegin() + i, m_input.cend());
-
-    size_t displacement;
-    std::tie(get_compound_command()->command_list, displacement) = Parser(sub_tokens).parse_compound_command_list();
-    m_input_i += displacement;
+    read_command_list_into_until(get_compound_command().command_list, {"}"});
 }
 
-Token* Parser::input_next_token()
+// This function gets called
+//      if [HERE] conditions; then ...
+// reads everything until 'fi', including the 'fi'
+void Parser::read_commit_if()
+{
+    read_command_list_into_until(get_if_command().condition, {"then"});
+    read_command_list_into_until(get_if_command().then, {"fi"});
+}
+
+const Token * Parser::read_command_list_into_until(CommandList& into, const std::vector<std::string_view> &until_commands)
+{
+    auto sub_tokens = m_input.subspan(m_input_i);
+
+    size_t displacement;
+    const Token *end_token;
+    std::tie(into, displacement, end_token) = Parser(sub_tokens).parse_until(until_commands);
+    m_input_i += displacement;
+
+    return end_token;
+}
+
+const Token * Parser::input_next_token()
 {
     if (m_input_i >= m_input.size())
         return nullptr;
@@ -127,20 +137,26 @@ Token* Parser::input_next_token()
     return &m_input[m_input_i++];
 }
 
-Command::Simple *Parser::get_simple_command()
+Command::Simple &Parser::get_simple_command()
 {
     if(has_empty_command()) {
         m_command.value = Command::Simple{};
     }
 
     if(! std::holds_alternative<Command::Simple>(m_command.value)) {
-        throw SyntaxError{"Compound commands cannot take arguments"};
+        if(std::holds_alternative<Command::Compound>(m_command.value))
+            throw SyntaxError{"{}-lists cannot take arguments"};
+
+        if(std::holds_alternative<Command::If>(m_command.value))
+            throw SyntaxError{"fi cannot take arguments"};
+
+        throw SyntaxError{"Extra word"};
     }
 
-    return &std::get<Command::Simple>(m_command.value);
+    return std::get<Command::Simple>(m_command.value);
 }
 
-Command::Compound *Parser::get_compound_command()
+Command::Compound &Parser::get_compound_command()
 {
     if(has_empty_command()) {
         m_command.value = Command::Compound{};
@@ -150,7 +166,23 @@ Command::Compound *Parser::get_compound_command()
         throw SyntaxError{"Compound commands cannot have environment variables passed to them"};
     }
 
-    return &std::get<Command::Compound>(m_command.value);
+    return std::get<Command::Compound>(m_command.value);
+}
+
+Command::If &Parser::get_if_command()
+{
+    if(has_empty_command()) {
+        m_command.value = Command::If{};
+    }
+
+    if(! std::holds_alternative<Command::If>(m_command.value)) {
+        if(std::holds_alternative<Command::Compound>(m_command.value))
+            throw SyntaxError{"Missing ';' between '}' and 'if'"};
+
+        throw SyntaxError{"If statements cannot have environment variables passed to them"};
+    }
+
+    return std::get<Command::If>(m_command.value);
 }
 
 bool Parser::has_empty_command()
@@ -158,12 +190,15 @@ bool Parser::has_empty_command()
     return std::holds_alternative<Command::Empty>(m_command.value);
 }
 
-void Parser::parse_token(Token *token) {
+void Parser::parse_token(const Token *token) {
     if (is_token_assignment(*token)) {
         commit_assignment(token->value);
     }
     else if (has_empty_command() && token->type == Token::Type::WORD && token->value == "{") {
         read_commit_compound_command_list();
+    }
+    else if (has_empty_command() && token->type == Token::Type::WORD && token->value == "if") {
+        read_commit_if();
     }
     else if (token->type == Token::Type::WORD) {
         commit_argument(token->value);
@@ -189,8 +224,7 @@ void Parser::parse_token(Token *token) {
 
 CommandList Parser::parse()
 {
-    Token *token;
-    while ((token = input_next_token())) {
+    while (const Token * token = input_next_token()) {
         parse_token(token);
     }
 
@@ -201,19 +235,42 @@ CommandList Parser::parse()
     return std::move(m_command_list);
 }
 
-std::pair<CommandList, size_t> Parser::parse_compound_command_list() {
-    Token *token;
-    while((token = input_next_token())) {
-        if(has_empty_command() && token->type == Token::Type::WORD && token->value == "}") {
+// Similar to Parser#parse(), but ends when it sees one of the commands specified in the parameter `commands`.
+// Useful for recursively parsing language structures. For example, after a `while`, should always be a `do`
+//
+// Returns:
+//  - A parsed command list
+//  - how many tokens did it take to construct that command list
+//  - a command from the parameter `commands` which caused the parsing to end
+std::tuple<CommandList, size_t, const Token *> Parser::parse_until(const std::vector<std::string_view> &commands)
+{
+    while(const Token *token = input_next_token()) {
+        if(has_empty_command() && token->type == Token::Type::WORD
+                && std::find(commands.cbegin(), commands.cend(), token->value) != commands.cend())
+        {
             commit_command();
             commit_pipeline();
             commit_and_or_list();
 
-            return { std::move(m_command_list), m_input_i };
+            return { std::move(m_command_list), m_input_i, token };
         }
         parse_token(token);
     }
 
     // TODO: this should prompt for more input
-    throw SyntaxError{"Compound command: '}' expected but got to the end of input"}; // No '}' on the current line
+    if (commands.size() == 1) {
+        throw SyntaxError{"Command: '" + std::string(commands.at(0)) + "' expected, but got to the end of input"};
+    } else {
+        std::string err{"Either one of "};
+        bool first = true;
+        for(const auto &command : commands) {
+            if(!first)
+                err += ", ";
+            err += '\'';
+            err += command;
+            err += '\'';
+        }
+        err += " expected, but got to the end of input";
+        throw SyntaxError{err};
+    }
 }

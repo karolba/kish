@@ -10,9 +10,7 @@ class WordExpander {
 public:
     explicit WordExpander(const std::string_view word_view)
         : m_word_view(word_view)
-    {
-        //dbgprintf("GETS HERE WordExpander constructor\n");
-    }
+    { }
 
     bool expand_into(std::vector<std::string> &buf);
     bool expand_into_space_joined(std::string &buf);
