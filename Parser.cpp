@@ -76,12 +76,6 @@ void Parser::commit_command()
             return;
     }
 
-    if(std::holds_alternative<Command::Compound>(m_command.value)) {
-        if(m_command.redirections.empty()
-                && get_compound_command()->command_list.empty())
-            return;
-    }
-
     m_pipeline.push_back(std::move(m_command));
     m_command = {};
 }
