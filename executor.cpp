@@ -326,6 +326,26 @@ static void expand_and_exec_compound_command(Command expanded) {
     exit(g.last_return_value);
 }
 
+[[noreturn]]
+static void expand_and_exec_if_command(Command cmd) {
+    if(!CommandExpander(&cmd).expand()) {
+        fprintf(stderr, "Command expansion failed\n");
+        exit(1);
+    }
+    for(const Redirection &redir : cmd.redirections) {
+        if(!setup_redirection(redir)) {
+            fprintf(stderr, "kish: could not redirect\n");
+            exit(1);
+        }
+    }
+    g.last_return_value = 0;
+    const Command::If &if_command = std::get<Command::If>(cmd.value);
+    run_command_list(if_command.condition);
+    if(g.last_return_value == 0)
+        run_command_list(if_command.then);
+    exit(g.last_return_value);
+}
+
 // Runs a pipelined command
 static std::optional<pid_t> run_command_expand_in_subprocess(const Command &cmd) {
     int pid = fork();
@@ -337,7 +357,8 @@ static std::optional<pid_t> run_command_expand_in_subprocess(const Command &cmd)
         std::visit(utils::overloaded {
               [&] (const Command::Empty) { expand_and_exec_empty_command(cmd); },
               [&] (const Command::Simple) { expand_and_exec_simple_command(cmd); },
-              [&] (const Command::Compound) { expand_and_exec_compound_command(cmd); }
+              [&] (const Command::Compound) { expand_and_exec_compound_command(cmd); },
+              [&] (const Command::If) { expand_and_exec_if_command(cmd); },
         }, cmd.value);
     }
     return { pid };
@@ -425,7 +446,13 @@ static void run_simple_command_expand_in_main_process(const Command &cmd) {
 }
 
 // Runs non-pipelined compound commands (e.g `{ a; b; } > c`)
-static void run_compound_command_expand_in_main_process(const Command &cmd) {
+static void run_compound_command_expand_in_main_process(Command cmd) {
+    if(!CommandExpander(&cmd).expand()) {
+        fprintf(stderr, "Command expansion failed\n");
+        g.last_return_value = 1;
+        return;
+    }
+
     const Command::Compound &compound_command = std::get<Command::Compound>(cmd.value);
 
     auto saved_fds = setup_redirections_save_old_fds(cmd.redirections);
@@ -435,12 +462,33 @@ static void run_compound_command_expand_in_main_process(const Command &cmd) {
     restore_old_fds(saved_fds);
 }
 
+static void run_if_command_expand_in_main_process(Command cmd) {
+    if(!CommandExpander(&cmd).expand()) {
+        fprintf(stderr, "Command expansion failed\n");
+        g.last_return_value = 1;
+        return;
+    }
+
+    const Command::If &if_command = std::get<Command::If>(cmd.value);
+
+    auto saved_fds = setup_redirections_save_old_fds(cmd.redirections);
+
+    g.last_return_value = 0;
+    run_command_list(if_command.condition);
+    if(g.last_return_value == 0) {
+        run_command_list(if_command.then);
+    }
+
+    restore_old_fds(saved_fds);
+}
+
 // Runs any non-pipelined command
 static void run_command_expand_in_main_process(const Command &cmd) {
     std::visit(utils::overloaded {
           [&] (const Command::Empty) { run_empty_command_expand_in_main_process(cmd); },
           [&] (const Command::Simple) { run_simple_command_expand_in_main_process(cmd); },
-          [&] (const Command::Compound) { run_compound_command_expand_in_main_process(cmd); }
+          [&] (const Command::Compound) { run_compound_command_expand_in_main_process(cmd); },
+          [&] (const Command::If) { run_if_command_expand_in_main_process(cmd); },
     }, cmd.value);
 }
 
