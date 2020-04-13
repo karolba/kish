@@ -125,7 +125,8 @@ static std::optional<int> fd_save(int original_fd) {
         perror("dup2");
         return {};
     }
-    close(original_fd);
+    // No need to close(original_fd) because dup2 closes the dest fd
+
     g.saved_fds.push_back(Global::SavedFd{original_fd, new_fd});
     return { new_fd };
 }
@@ -152,19 +153,22 @@ static void fd_restore(int saved_fd) {
     close(saved_fd);
 }
 
+static int file_redirection_type_to_open_option(const Redirection &redir) {
+    if(redir.type == Redirection::FileRead)
+        return O_RDONLY;
+    else if(redir.type == Redirection::FileWrite)
+        return O_WRONLY | O_CREAT | O_TRUNC;
+    else if(redir.type == Redirection::FileWriteAppend)
+        return O_WRONLY | O_CREAT | O_APPEND;
+    else {
+        fprintf(stderr, "kish: file_redirection_type_to_open_option called with a non-file redirection\n");
+        exit(1);
+    }
+}
+
 // TODO: Redirection should be a variant<FileRedirection, Rewiring> so those types make sense
 static bool setup_file_redirection(const Redirection &redir) {
-    int options;
-    if(redir.type == Redirection::FileRead)
-        options = O_RDONLY;
-    else if(redir.type == Redirection::FileWrite)
-        options = O_WRONLY | O_CREAT | O_TRUNC;
-    else if(redir.type == Redirection::FileWriteAppend)
-        options = O_WRONLY | O_CREAT | O_APPEND;
-    else {
-        fprintf(stderr, "setup_file_redirection called with a non-file redirection\n");
-        return false;
-    }
+    int options = file_redirection_type_to_open_option(redir);
 
     return fd_open(redir.fd, redir.path.c_str(), options, 0666);
 }
@@ -173,7 +177,6 @@ static bool setup_rewiring(const Redirection &redir) {
     if(redir.fd == redir.rewire_fd)
         return true;
 
-    close(redir.fd);
     if(dup2(redir.rewire_fd, redir.fd) == -1) {
         perror("rewiring");
         return false;
@@ -196,25 +199,68 @@ static bool setup_redirection(const Redirection &redir) {
     return false;
 }
 
+/*
+ * Used to save (and later restore, via restore_old_fds()) fds when executing, among others:
+ * - redirections applied to builtins: `echo $var > file`
+ * - redirections to non-pipelined command lists: `{ a; b; } > file`
+ */
 static std::deque<int> setup_redirections_save_old_fds(const std::vector<Redirection> &redirs) {
+    // The naive approach to handle this would be
+    // - save the old fd
+    // - open() and move the resulting fd to the old fd
+    //
+    // But redirection cannot be done that way. Consider the following:
+    //        { ...; } > /dev/stdout
+    //    ==  { ...; } > /proc/self/fd/1
+    // In this case the naive method would fail, because stdout (fd=1) would already be moved to a different fd to be replaced,
+    // so when open() tries to access it, there's nothing in fd 1.
+    //
+    // To prevent this,
+    // - open() needs to be called first,
+    // - then the original fd needs to be saved,
+    // - and then the resulting fd from open() needs to be moved to where the original fd was
+
     std::deque<int> saved_fds;
 
     for(const Redirection &redir : redirs) {
-        if(redir.type == Redirection::Type::Rewiring && redir.fd == redir.rewire_fd)
-            continue;
 
-        auto saved_fd = fd_save(redir.fd);
-        if(!saved_fd) {
-            fprintf(stderr, "Error saving file descriptors\n");
-            continue; // TODO: is continuing here a good option?
+        if(redir.type == Redirection::Type::Rewiring) { // (for example, 2>&3)
+            if(redir.fd == redir.rewire_fd)
+                continue;
+
+            auto saved_fd = fd_save(redir.fd);
+            if(!saved_fd)
+                continue;
+
+            saved_fds.push_front(saved_fd.value());
+
+            if(dup2(redir.rewire_fd, redir.fd) == -1) {
+                perror("dup2");
+                continue;
+            }
+        } else { // file redirection (>file, >>file, ..)
+            int new_fd = open(redir.path.c_str(), file_redirection_type_to_open_option(redir), 0666);
+            if(new_fd == -1) {
+                perror("open");
+                continue;
+            }
+
+            auto saved_fd = fd_save(redir.fd);
+            if(!saved_fd)
+                continue;
+
+            saved_fds.push_front(saved_fd.value());
+
+            if(dup2(new_fd, redir.fd) == -1) {
+                perror("dup2");
+                continue;
+            }
+
+            if(close(new_fd) == -1) {
+                perror("close");
+                continue;
+            }
         }
-
-        saved_fds.push_front(saved_fd.value());
-
-        if(redir.type == Redirection::Type::Rewiring)
-            setup_rewiring(redir);
-        else
-            setup_file_redirection(redir);
     }
 
     return saved_fds;
