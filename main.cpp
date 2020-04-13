@@ -25,4 +25,6 @@ int main(int argc, char *argv[]) {
             run_from_string(input_line);
         }
     }
+
+    return g.last_return_value;
 }
