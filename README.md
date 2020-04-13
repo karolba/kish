@@ -1,6 +1,6 @@
 # `kish` - a simple shell, aspiring to be fully POSIX-compatibile in the future
 
-### What currently works:
+## What currently works:
 - simple commands
 - quoting
 - redirections (`> file`)
@@ -10,8 +10,29 @@
 - builitins:
   - `true`
   - `false`
-- piping and redirecting to/from bulitins without spawning a subshell
+  - `cd` (without `-P` and `-L`)
+- `if <condition>; then <then>; fi`
+- piping and redirecting to/from bulitins/command lists/if statements
 - variables:
   - return value from last command - `$?`
   - current pid - `$$`
 - inline environment variables (`HOME='/' command`)
+
+## Building
+
+The `kish` shell depends on [tcbrindle/span](https://github.com/tcbrindle/span).
+
+```sh
+$ git submodule update --init
+```
+
+```sh
+$ cmake .
+$ make
+```
+
+
+## Testing
+
+The `kish` shell can be tested by a shell script located in `test/tests.sh`.
+Simply run the shellscript with a path to built `kish` as its argument.
