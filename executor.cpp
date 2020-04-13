@@ -384,11 +384,17 @@ static void expand_and_exec_if_command(Command cmd) {
             exit(1);
         }
     }
-    g.last_return_value = 0;
+    g.last_return_value = 0; // if ; ; then ...  <-  should not depend on $?
     const Command::If &if_command = std::get<Command::If>(cmd.value);
     run_command_list(if_command.condition);
-    if(g.last_return_value == 0)
+
+    int condition_return_value = g.last_return_value;
+
+    g.last_return_value = 0; // if false; then :; fi  <-  should reset $? to 0
+
+    if(condition_return_value == 0)
         run_command_list(if_command.then);
+
     exit(g.last_return_value);
 }
 
@@ -519,9 +525,14 @@ static void run_if_command_expand_in_main_process(Command cmd) {
 
     auto saved_fds = setup_redirections_save_old_fds(cmd.redirections);
 
-    g.last_return_value = 0;
+    g.last_return_value = 0; // if ; ; then ...  <-  should not depend on $?
     run_command_list(if_command.condition);
-    if(g.last_return_value == 0) {
+
+    int condition_return_value = g.last_return_value;
+
+    g.last_return_value = 0; // if false; then :; fi  <-  should reset $? to 0
+
+    if(condition_return_value == 0) {
         run_command_list(if_command.then);
     }
 
