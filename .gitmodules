@@ -1,0 +1,3 @@
+[submodule "tcbrindle-span"]
+	path = tcbrindle-span
+	url = https://github.com/tcbrindle/span.git
