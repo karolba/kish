@@ -625,7 +625,8 @@ void run_from_string(const std::string &str) {
     try {
         parsed = Parser(tokens).parse();
     } catch(const Parser::SyntaxError &se) {
-        std::cerr << "Parser syntax error: " << se.explanation << "\n";
+        std::cerr << "Syntax error: " << se.explanation << "\n";
+        g.last_return_value = 1;
         return;
     }
 
