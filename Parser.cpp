@@ -114,7 +114,12 @@ void Parser::read_commit_compound_command_list()
 void Parser::read_commit_if()
 {
     read_command_list_into_until(get_if_command().condition, {"then"});
-    read_command_list_into_until(get_if_command().then, {"fi"});
+
+    const Token *else_or_fi = read_command_list_into_until(get_if_command().then, {"else", "fi"});
+    if(else_or_fi->value == "else") {
+        get_if_command().opt_else.emplace();
+        read_command_list_into_until(get_if_command().opt_else.value(), {"fi"});
+    }
 }
 
 const Token * Parser::read_command_list_into_until(CommandList& into, const std::vector<std::string_view> &until_commands)
@@ -259,7 +264,7 @@ std::tuple<CommandList, size_t, const Token *> Parser::parse_until(const std::ve
 
     // TODO: this should prompt for more input
     if (commands.size() == 1) {
-        throw SyntaxError{"Command: '" + std::string(commands.at(0)) + "' expected, but got to the end of input"};
+        throw SyntaxError{"'" + std::string(commands.at(0)) + "' expected, but got to the end of input"};
     } else {
         std::string err{"Either one of "};
         bool first = true;
@@ -269,6 +274,8 @@ std::tuple<CommandList, size_t, const Token *> Parser::parse_until(const std::ve
             err += '\'';
             err += command;
             err += '\'';
+
+            first = false;
         }
         err += " expected, but got to the end of input";
         throw SyntaxError{err};

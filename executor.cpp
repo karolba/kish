@@ -392,8 +392,12 @@ static void expand_and_exec_if_command(Command cmd) {
 
     g.last_return_value = 0; // if false; then :; fi  <-  should reset $? to 0
 
-    if(condition_return_value == 0)
+    if(condition_return_value == 0) {
         run_command_list(if_command.then);
+    } else {
+        if(if_command.opt_else.has_value())
+            run_command_list(if_command.opt_else.value());
+    }
 
     exit(g.last_return_value);
 }
@@ -534,6 +538,9 @@ static void run_if_command_expand_in_main_process(Command cmd) {
 
     if(condition_return_value == 0) {
         run_command_list(if_command.then);
+    } else {
+        if(if_command.opt_else.has_value())
+            run_command_list(if_command.opt_else.value());
     }
 
     restore_old_fds(saved_fds);

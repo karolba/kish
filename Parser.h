@@ -55,9 +55,11 @@ struct Command {
     struct Compound { // `{ true; false; }`
         CommandList command_list;
     };
+    // TODO: Technically an `if` is a compound command too
     struct If {
         CommandList condition;
         CommandList then;
+        std::optional<CommandList> opt_else;
     };
 
     // TODO: to prevent unneccessary copying in run_pipeline:
