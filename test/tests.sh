@@ -74,3 +74,7 @@ ktest 'UNIQUE_ENV_VAR=123 OTHER_VAR=456 env | grep "UNIQUE_ENV_VAR"' 'UNIQUE_ENV
 ktest ">'${tmpfile}-creation' && < '${tmpfile}-creation' && rm '${tmpfile}-creation'"
 ktest '>>/dev/stdin _var_=1 </dev/stdin && echo $_var_' '1'
 ktest '>>/dev/stdin var=1 </dev/stdin | if false; then true; fi'
+ktest 'if false; then echo 1; else echo 2; fi' '2'
+ktest 'a="echo a"; if $a 1 && false; then $a; else $a "$a"; fi' $'a 1\na echo a'
+ktest 'a="echo a"; if $a 1 && false; then $a; else $a "$a"; fi | cat' $'a 1\na echo a'
+ktest 'a="echo a"; { { if $a 1 && false; then $a; else $a "$a"; fi; } | cat; }' $'a 1\na echo a'
