@@ -20,7 +20,7 @@
 
 ## Building
 
-The `kish` shell depends on [tcbrindle/span](https://github.com/tcbrindle/span).
+The `kish` shell depends on [tcbrindle/span](https://github.com/tcbrindle/span). It can be pulled from a git submodule:
 
 ```sh
 $ git submodule update --init
