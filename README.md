@@ -11,7 +11,7 @@
   - `true`
   - `false`
   - `cd` (without `-P` and `-L`)
-- `if <condition>; then <then>; fi`
+- if statements: `if <command-list>; then <command-list>; [else <command-list>]; fi`
 - piping and redirecting to/from bulitins/command lists/if statements
 - variables:
   - return value from last command - `$?`
