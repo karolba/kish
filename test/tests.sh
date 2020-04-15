@@ -54,7 +54,6 @@ ktest "printf '%s\\n' 'abc"'\\'"def'" 'abc\\def'
 ktest '{ echo ab; echo cd; } | rev | tac' $'dc\nba'
 ktest '{ echo ab; echo cd; } >/dev/stderr' '' $'ab\ncd'
 ktest 'a="""1"; { echo $a; } | { a=2; cat; echo $a; }' $'1\n2'
-ktest 'a="""1"; if [ "$a" = 1 ]; then echo $a; fi | if true; then a=2; cat; echo $a; fi' $'1\n2'
 ktest 'echo 12 | { cat; echo 34; } | rev' $'21\n43'
 ktest 'echo 12 | if true; then rev; fi' '21'
 ktest 'echo 12 | if false; then cat; fi'
@@ -75,6 +74,99 @@ ktest ">'${tmpfile}-creation' && < '${tmpfile}-creation' && rm '${tmpfile}-creat
 ktest '>>/dev/stdin _var_=1 </dev/stdin && echo $_var_' '1'
 ktest '>>/dev/stdin var=1 </dev/stdin | if false; then true; fi'
 ktest 'if false; then echo 1; else echo 2; fi' '2'
-ktest 'a="echo a"; if $a 1 && false; then $a; else $a "$a"; fi' $'a 1\na echo a'
-ktest 'a="echo a"; if $a 1 && false; then $a; else $a "$a"; fi | cat' $'a 1\na echo a'
-ktest 'a="echo a"; { { if $a 1 && false; then $a; else $a "$a"; fi; } | cat; }' $'a 1\na echo a'
+ktest '
+    a=1
+    if [ "$a" = 1 ]; then
+        echo $a
+    fi | if true; then
+        a=2
+        cat
+        echo $a
+    fi
+    ' $'1\n2'
+ktest '
+    a="echo a"
+    if $a 1 && false; then 
+        $a
+    else
+        $a "$a"
+    fi
+    ' $'a 1\na echo a'
+ktest '
+    a="echo a"
+    if $a 1 && false; then
+        $a
+    else
+        $a "$a"
+    fi | cat
+    ' $'a 1\na echo a'
+ktest '
+    a="echo a"
+    {
+        {
+            if $a 1 && false; then
+                $a
+            else
+                $a "$a"
+            fi
+        } | cat
+    }
+    ' $'a 1\na echo a'
+ktest '
+    if false; then
+        echo 1
+    elif true; then
+        echo 2
+    else
+        echo 3
+    fi' 2
+ktest '
+    if true; then
+        echo 1
+    elif true; then
+        echo 2
+    else
+        echo 3
+    fi' 1
+ktest '
+    if false; then
+        echo 1
+    elif false; then
+        echo 2
+    else
+        echo 3
+    fi' 3
+ktest '
+    four=4
+    if false; then
+        echo 1
+    elif false; then
+        echo 2
+    elif false; then
+        echo 3
+    elif false; true; then
+        echo $four
+    else
+        echo 5
+    fi' 4
+ktest '
+    if false; then
+        echo 1
+    elif false; then
+        echo 2
+    else
+        echo 3
+    fi | cat' 3
+ktest '
+    four=4
+    if false; then
+        echo 1
+    elif false; then
+        echo 2
+    elif false; then
+        echo 3
+    elif true; then
+        echo $four
+    else
+        echo 5
+    fi | cat' 4
