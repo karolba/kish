@@ -57,8 +57,14 @@ struct Command {
     };
     // TODO: Technically an `if` is a compound command too
     struct If {
+        struct Elif {
+            CommandList condition;
+            CommandList then;
+        };
+
         CommandList condition;
         CommandList then;
+        std::vector<Elif> elif;
         std::optional<CommandList> opt_else;
     };
 

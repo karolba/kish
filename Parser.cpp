@@ -113,10 +113,18 @@ void Parser::read_commit_compound_command_list()
 // reads everything until 'fi', including the 'fi'
 void Parser::read_commit_if()
 {
+    const Token *end_token;
+
     read_command_list_into_until(get_if_command().condition, {"then"});
 
-    const Token *else_or_fi = read_command_list_into_until(get_if_command().then, {"else", "fi"});
-    if(else_or_fi->value == "else") {
+    end_token = read_command_list_into_until(get_if_command().then, {"elif", "else", "fi"});
+    while(end_token->value == "elif") {
+        Command::If::Elif elif;
+        read_command_list_into_until(elif.condition, {"then"});
+        end_token = read_command_list_into_until(elif.then, {"elif", "else", "fi"});
+        get_if_command().elif.emplace_back(std::move(elif));
+    }
+    if(end_token->value == "else") {
         get_if_command().opt_else.emplace();
         read_command_list_into_until(get_if_command().opt_else.value(), {"fi"});
     }

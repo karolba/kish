@@ -395,6 +395,17 @@ static void expand_and_exec_if_command(Command cmd) {
     if(condition_return_value == 0) {
         run_command_list(if_command.then);
     } else {
+        for(const auto &elif : if_command.elif) {
+            g.last_return_value = 0;
+            run_command_list(elif.condition);
+            condition_return_value = g.last_return_value;
+            g.last_return_value = 0;
+
+            if(condition_return_value == 0) {
+                run_command_list(elif.then);
+                exit(g.last_return_value);
+            }
+        }
         if(if_command.opt_else.has_value())
             run_command_list(if_command.opt_else.value());
     }
@@ -410,6 +421,10 @@ static std::optional<pid_t> run_command_expand_in_subprocess(const Command &cmd)
         return {};
     }
     if(pid == 0) {
+
+        // TODO: make CommandExpander run here, instead of in expand_and_exec_*_command(cmd)
+        // Would that work?
+
         std::visit(utils::overloaded {
               [&] (const Command::Empty) { expand_and_exec_empty_command(cmd); },
               [&] (const Command::Simple) { expand_and_exec_simple_command(cmd); },
@@ -539,6 +554,19 @@ static void run_if_command_expand_in_main_process(Command cmd) {
     if(condition_return_value == 0) {
         run_command_list(if_command.then);
     } else {
+        for(const auto &elif : if_command.elif) {
+            g.last_return_value = 0;
+            run_command_list(elif.condition);
+            condition_return_value = g.last_return_value;
+            g.last_return_value = 0;
+
+            if(condition_return_value == 0) {
+                run_command_list(elif.then);
+
+                restore_old_fds(saved_fds);
+                return;
+            }
+        }
         if(if_command.opt_else.has_value())
             run_command_list(if_command.opt_else.value());
     }
