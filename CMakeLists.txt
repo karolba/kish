@@ -30,4 +30,5 @@ add_executable(kish
     builtins/false.cpp
     builtins/help.cpp
     builtins/cd.cpp
+    test/tests.sh
 )
