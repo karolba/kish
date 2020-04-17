@@ -22,7 +22,7 @@ ktest() {
 	fi
 	if [[ $reason ]]; then
 		printf "TEST FAILED: '%s'\\n" "$1"
-		printf '%s' "$reason"
+        printf '%s' "$reason"
 		(( failed += 1 ))
 	else
 		(( passed += 1 ))
@@ -46,12 +46,14 @@ ktest 'echo a | cat && echo b | cat; echo c | cat && echo d | cat' $'a\nb\nc\nd'
 ktest 'false || true || false; echo "$?" | cat' '0'
 ktest 'true && false && true' '' '' 1
 ktest 'false || echo ok' 'ok'
+ktest 'echo 123 > /dev/stderr | cat' '' '123'
 ktest 'echo "abc\\def"' 'abc\def'
 #ktest 'echo "abc\\\\def"' 'abc\def' # TODO: '\\' -> '\' in echo
 ktest 'a=1 b=1\ 2; printf "%s|" "$a"$b"$b"'"'\$b'" '11|21 2$b|'
 ktest "printf '%s\\n' 'abc"'\\'"def'" 'abc\\def'
 ktest '{ echo ab; echo cd; } | rev | tac' $'dc\nba'
 ktest '{ echo ab; echo cd; } >/dev/stderr' '' $'ab\ncd'
+ktest '{ echo ab; echo cd; } >/dev/stderr | cat' '' $'ab\ncd'
 ktest 'a="""1"; { echo $a; } | { a=2; cat; echo $a; }' $'1\n2'
 ktest 'echo 12 | { cat; echo 34; } | rev' $'21\n43'
 ktest 'echo 12 | if true; then rev; fi' '21'
@@ -192,3 +194,4 @@ ktest 'a=true
     echo $a | cat
     ' $'true\nfalse'
 ktest 'a=true; while $a; do a=false; echo test; done > /dev/stderr' '' 'test'
+ktest 'a=true; while $a; do echo "$a"; a=false; done > /dev/stderr | rev' '' 'true'
