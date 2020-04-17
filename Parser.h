@@ -55,7 +55,8 @@ struct Command {
     struct Compound { // `{ true; false; }`
         CommandList command_list;
     };
-    // TODO: Technically an `if` is a compound command too
+    // TODO: Technically `if` and others are compound commands too,
+    // Command::Compound should be renamed to something like Command::SimpleCompound
     struct If {
         struct Elif {
             CommandList condition;
@@ -67,6 +68,10 @@ struct Command {
         std::vector<Elif> elif;
         std::optional<CommandList> opt_else;
     };
+    struct While {
+        CommandList condition;
+        CommandList body;
+    };
 
     // TODO: to prevent unneccessary copying in run_pipeline:
     std::vector<Redirection> redirections; // TODO: this should be a smart pointer
@@ -74,7 +79,7 @@ struct Command {
     // File descriptors to close in the main shell process after forking
     std::vector<int> pipe_file_descriptors;
 
-    std::variant<Empty, Simple, Compound, If> value;
+    std::variant<Empty, Simple, Compound, If, While> value;
 };
 
 class Parser {
@@ -100,6 +105,7 @@ private:
     Command::Simple &get_simple_command();
     Command::Compound &get_compound_command();
     Command::If &get_if_command();
+    Command::While &get_while_command();
 
     bool has_empty_command();
 
@@ -111,6 +117,7 @@ private:
 
     void read_commit_compound_command_list();
     void read_commit_if();
+    void read_commit_while();
 
     const Token *read_command_list_into_until(CommandList& into, const std::vector<std::string_view> &until_command);
 

@@ -14,6 +14,7 @@ bool CommandExpander::expand()
         auto &simple_command = std::get<Command::Simple>(m_command->value);
         for (auto& assignment : simple_command.variable_assignments) {
             std::vector<std::string> expanded;
+            // TODO: expand_into_space_joined
             if(! WordExpander(assignment.value).expand_into(expanded)) {
                 word_expansion_failed(assignment.value);
                 return false;
@@ -27,6 +28,8 @@ bool CommandExpander::expand()
                 builder += expanded[i];
             }
             assignment.value = builder;
+
+            // TODO: CommandExpander should not setenv
             setenv(assignment.name.c_str(), assignment.value.c_str(), 1);
             //dbg() << expanded[0] << '\n';
         }

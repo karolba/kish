@@ -34,7 +34,6 @@ export LANG=C
 
 # ktest usage: 
 #  ktest <kish commans> [expected stdout] [expected stderr] [expexted $?]
-
 ktest 'true'
 ktest 'false' '' '' 1
 ktest 'true | true'
@@ -170,3 +169,26 @@ ktest '
     else
         echo 5
     fi | cat' 4
+ktest '
+    a=true
+    while $a; do
+        echo in loop
+        a=false
+    done
+    ' 'in loop'
+ktest '
+    a=true
+    while $a; do
+        echo in $a loop
+        a=false
+    done
+    ' 'in true loop'
+ktest 'a=false; while $a; do echo test; done'
+ktest 'a=true
+    while $a; do
+        echo $a
+        a=false
+    done
+    echo $a | cat
+    ' $'true\nfalse'
+ktest 'a=true; while $a; do a=false; echo test; done > /dev/stderr' '' 'test'

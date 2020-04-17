@@ -130,6 +130,14 @@ void Parser::read_commit_if()
     }
 }
 
+// This function gets called
+//    while [HERE] conditions; do ..
+// reads everything until 'done', including the 'done'
+void Parser::read_commit_while() {
+    read_command_list_into_until(get_while_command().condition, {"do"});
+    read_command_list_into_until(get_while_command().body, {"done"});
+}
+
 const Token * Parser::read_command_list_into_until(CommandList& into, const std::vector<std::string_view> &until_commands)
 {
     auto sub_tokens = m_input.subspan(m_input_i);
@@ -192,10 +200,32 @@ Command::If &Parser::get_if_command()
         if(std::holds_alternative<Command::Compound>(m_command.value))
             throw SyntaxError{"Missing ';' between '}' and 'if'"};
 
-        throw SyntaxError{"If statements cannot have environment variables passed to them"};
+        if(std::holds_alternative<Command::Simple>(m_command.value))
+            throw SyntaxError{"If statements cannot have environment variables passed to them"};
+
+        throw SyntaxError{"Unexpected if"};
     }
 
     return std::get<Command::If>(m_command.value);
+}
+
+Command::While &Parser::get_while_command()
+{
+    if(has_empty_command()) {
+        m_command.value = Command::While{};
+    }
+
+    if(! std::holds_alternative<Command::While>(m_command.value)) {
+        if(std::holds_alternative<Command::Compound>(m_command.value))
+            throw SyntaxError{"Missing ';' between '}' and 'while'"};
+
+        if(std::holds_alternative<Command::Simple>(m_command.value))
+            throw SyntaxError{"While loops cannot have environment variables passed to them"};
+
+        throw SyntaxError{"Unexpected 'while'"};
+    }
+
+    return std::get<Command::While>(m_command.value);
 }
 
 bool Parser::has_empty_command()
@@ -212,6 +242,9 @@ void Parser::parse_token(const Token *token) {
     }
     else if (has_empty_command() && token->type == Token::Type::WORD && token->value == "if") {
         read_commit_if();
+    }
+    else if (has_empty_command() && token->type == Token::Type::WORD && token->value == "while") {
+        read_commit_while();
     }
     else if (token->type == Token::Type::WORD) {
         commit_argument(token->value);

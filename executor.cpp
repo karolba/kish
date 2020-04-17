@@ -413,6 +413,32 @@ static void expand_and_exec_if_command(Command cmd) {
     exit(g.last_return_value);
 }
 
+[[noreturn]]
+static void expand_and_exec_while_command(Command cmd) {
+    if(!CommandExpander(&cmd).expand()) {
+        fprintf(stderr, "Command expansion failed\n");
+        exit(1);
+    }
+    for(const Redirection &redir : cmd.redirections) {
+        if(!setup_redirection(redir)) {
+            fprintf(stderr, "kish: could not redirect\n");
+            exit(1);
+        }
+    }
+
+    const Command::While &while_command = std::get<Command::While>(cmd.value);
+
+    while(true) {
+        g.last_return_value = 0;
+        run_command_list(while_command.condition);
+
+        if(g.last_return_value != 0)
+            exit(0);
+
+        run_command_list(while_command.body);
+    }
+}
+
 // Runs a pipelined command
 static std::optional<pid_t> run_command_expand_in_subprocess(const Command &cmd) {
     int pid = fork();
@@ -430,6 +456,7 @@ static std::optional<pid_t> run_command_expand_in_subprocess(const Command &cmd)
               [&] (const Command::Simple) { expand_and_exec_simple_command(cmd); },
               [&] (const Command::Compound) { expand_and_exec_compound_command(cmd); },
               [&] (const Command::If) { expand_and_exec_if_command(cmd); },
+              [&] (const Command::While) { expand_and_exec_while_command(cmd); },
         }, cmd.value);
     }
     return { pid };
@@ -574,6 +601,32 @@ static void run_if_command_expand_in_main_process(Command cmd) {
     restore_old_fds(saved_fds);
 }
 
+static void run_while_command_expand_in_main_process(Command cmd) {
+    if(!CommandExpander(&cmd).expand()) {
+        fprintf(stderr, "Command expansion failed\n");
+        g.last_return_value = 1;
+        return;
+    }
+
+    const Command::While &while_command = std::get<Command::While>(cmd.value);
+
+    auto saved_fds = setup_redirections_save_old_fds(cmd.redirections);
+
+    while(true) {
+        g.last_return_value = 0;
+        run_command_list(while_command.condition);
+        int exit_code = g.last_return_value;
+        g.last_return_value = 0;
+
+        if(exit_code != 0) {
+            restore_old_fds(saved_fds);
+            return;
+        }
+
+        run_command_list(while_command.body);
+    }
+}
+
 // Runs any non-pipelined command
 static void run_command_expand_in_main_process(const Command &cmd) {
     std::visit(utils::overloaded {
@@ -581,6 +634,7 @@ static void run_command_expand_in_main_process(const Command &cmd) {
           [&] (const Command::Simple) { run_simple_command_expand_in_main_process(cmd); },
           [&] (const Command::Compound) { run_compound_command_expand_in_main_process(cmd); },
           [&] (const Command::If) { run_if_command_expand_in_main_process(cmd); },
+          [&] (const Command::While) { run_while_command_expand_in_main_process(cmd); },
     }, cmd.value);
 }
 
