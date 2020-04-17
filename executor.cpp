@@ -46,7 +46,7 @@ static bool touch_file(const std::string &path, const char *mode) {
     return true;
 }
 
-static bool touch_files(const std::vector<Redirection> &redirections) {
+static bool touch_files(const std::deque<Redirection> &redirections) {
     // TODO: maybe this shouldn't be a special case? Could `>a` be equivallent in
     // results to just `{}>a`?
     for(const Redirection &redir : redirections) {
@@ -204,7 +204,7 @@ static bool setup_redirection(const Redirection &redir) {
  * - redirections applied to builtins: `echo $var > file`
  * - redirections to non-pipelined command lists: `{ a; b; } > file`
  */
-static std::deque<int> setup_redirections_save_old_fds(const std::vector<Redirection> &redirs) {
+static std::deque<int> setup_redirections_save_old_fds(const std::deque<Redirection> &redirs) {
     // The naive approach to handle this would be
     // - save the old fd
     // - open() and move the resulting fd to the old fd
@@ -645,11 +645,12 @@ static void setup_pipe_between(Command &left, Command &right) {
         perror("pipe");
         return;
     }
-    left.redirections.push_back(Redirection{Redirection::Rewiring, STDOUT_FILENO, pipefd[1]});
-    right.redirections.push_back(Redirection{Redirection::Rewiring, STDIN_FILENO, pipefd[0]});
+    left.redirections.push_front(Redirection{Redirection::Rewiring, STDOUT_FILENO, pipefd[1]});
+    right.redirections.push_front(Redirection{Redirection::Rewiring, STDIN_FILENO, pipefd[0]});
 
-    left.pipe_file_descriptors.push_back(pipefd[1]);
-    right.pipe_file_descriptors.push_back(pipefd[0]);
+    // TODO: Should this be a `push_front` or a `push_back`? Does the order here even matter?
+    left.pipe_file_descriptors.push_front(pipefd[1]);
+    right.pipe_file_descriptors.push_front(pipefd[0]);
 }
 
 // Runs a multi-command pipeline, for example: `a | b | c`

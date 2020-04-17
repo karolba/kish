@@ -7,6 +7,7 @@
 #include <variant>
 #include <optional>
 #include <string_view>
+#include <deque>
 
 // TODO: After C++20 rolls out, switch to std::span
 #include "tcb/span.hpp"
@@ -74,10 +75,10 @@ struct Command {
     };
 
     // TODO: to prevent unneccessary copying in run_pipeline:
-    std::vector<Redirection> redirections; // TODO: this should be a smart pointer
+    std::deque<Redirection> redirections; // TODO: this should be a smart pointer
 
     // File descriptors to close in the main shell process after forking
-    std::vector<int> pipe_file_descriptors;
+    std::deque<int> pipe_file_descriptors;
 
     std::variant<Empty, Simple, Compound, If, While> value;
 };
