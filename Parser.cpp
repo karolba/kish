@@ -246,6 +246,16 @@ void Parser::parse_token(const Token *token) {
     else if (has_empty_command() && token->type == Token::Type::WORD && token->value == "while") {
         read_commit_while();
     }
+    else if (has_empty_command() && token->type == Token::Type::WORD && (
+             token->value == "then"
+             || token->value == "elif"
+             || token->value == "else"
+             || token->value == "fi"
+             || token->value == "do"
+             || token->value == "done"
+             || token->value == "esac")) {
+        throw SyntaxError{"Unexpected token '" + token->value + "'"};
+    }
     else if (token->type == Token::Type::WORD) {
         commit_argument(token->value);
     }

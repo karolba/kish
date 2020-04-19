@@ -195,3 +195,9 @@ ktest 'a=true
     ' $'true\nfalse'
 ktest 'a=true; while $a; do a=false; echo test; done > /dev/stderr' '' 'test'
 ktest 'a=true; while $a; do echo "$a"; a=false; done > /dev/stderr | rev' '' 'true'
+ktest 'then' '' "Syntax error: Unexpected token 'then'" 1
+ktest 'elif' '' "Syntax error: Unexpected token 'elif'" 1
+ktest 'else' '' "Syntax error: Unexpected token 'else'" 1
+ktest 'fi' '' "Syntax error: Unexpected token 'fi'" 1
+ktest 'do' '' "Syntax error: Unexpected token 'do'" 1
+ktest 'done' '' "Syntax error: Unexpected token 'done'" 1
