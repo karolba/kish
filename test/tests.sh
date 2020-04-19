@@ -67,7 +67,6 @@ ktest 'if true; then { echo a; echo b > /dev/stderr; echo c; } > /dev/null; fi' 
 ktest 'if true; then echo x; fi > /dev/stdout' 'x'
 ktest 'a=true; if $a; then echo "[$a]"; fi' '[true]'
 ktest 'a=true; if $a; then echo "[$a]"; fi | cat' '[true]'
-ktest 'if false; then :; fi test' '' 'Syntax error: fi cannot take arguments' 1
 ktest '{ true; } true' '' 'Syntax error: {}-lists cannot take arguments' 1
 ktest 'a=1 {' '' '{: No such file or directory' 127
 ktest 'UNIQUE_ENV_VAR=123 OTHER_VAR=456 env | grep "UNIQUE_ENV_VAR"' 'UNIQUE_ENV_VAR=123'
@@ -201,3 +200,7 @@ ktest 'else' '' "Syntax error: Unexpected token 'else'" 1
 ktest 'fi' '' "Syntax error: Unexpected token 'fi'" 1
 ktest 'do' '' "Syntax error: Unexpected token 'do'" 1
 ktest 'done' '' "Syntax error: Unexpected token 'done'" 1
+ktest 'if true; then echo x; fi arg' '' "Syntax error: 'fi' cannot take arguments" 1
+ktest 'if true; then echo x; fi { arg; }' '' "Syntax error: 'fi' cannot take arguments" 1
+ktest 'while false; do x; done arg' '' "Syntax error: 'done' cannot take arguments" 1
+ktest 'while false; do x; done { arg; }' '' "Syntax error: 'done' cannot take arguments" 1

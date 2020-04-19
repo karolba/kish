@@ -169,7 +169,10 @@ Command::Simple &Parser::get_simple_command()
             throw SyntaxError{"{}-lists cannot take arguments"};
 
         if(std::holds_alternative<Command::If>(m_command.value))
-            throw SyntaxError{"fi cannot take arguments"};
+            throw SyntaxError{"'fi' cannot take arguments"};
+
+        if(std::holds_alternative<Command::While>(m_command.value))
+            throw SyntaxError{"'done' cannot take arguments"};
 
         throw SyntaxError{"Extra word"};
     }
