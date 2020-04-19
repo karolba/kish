@@ -138,6 +138,14 @@ void Parser::read_commit_while() {
     read_command_list_into_until(get_while_command().body, {"done"});
 }
 
+// This function gets called
+//    until [HERE] conditions; do ..
+// reads everything until 'done', including the 'done'
+void Parser::read_commit_until() {
+    read_command_list_into_until(get_until_command().condition, {"do"});
+    read_command_list_into_until(get_until_command().body, {"done"});
+}
+
 const Token * Parser::read_command_list_into_until(CommandList& into, const std::vector<std::string_view> &until_commands)
 {
     auto sub_tokens = m_input.subspan(m_input_i);
@@ -172,6 +180,9 @@ Command::Simple &Parser::get_simple_command()
             throw SyntaxError{"'fi' cannot take arguments"};
 
         if(std::holds_alternative<Command::While>(m_command.value))
+            throw SyntaxError{"'done' cannot take arguments"};
+
+        if(std::holds_alternative<Command::Until>(m_command.value))
             throw SyntaxError{"'done' cannot take arguments"};
 
         throw SyntaxError{"Extra word"};
@@ -231,6 +242,25 @@ Command::While &Parser::get_while_command()
     return std::get<Command::While>(m_command.value);
 }
 
+Command::Until &Parser::get_until_command()
+{
+    if(has_empty_command()) {
+        m_command.value = Command::Until{};
+    }
+
+    if(! std::holds_alternative<Command::Until>(m_command.value)) {
+        if(std::holds_alternative<Command::Compound>(m_command.value))
+            throw SyntaxError{"Missing ';' between '}' and 'until'"};
+
+        if(std::holds_alternative<Command::Simple>(m_command.value))
+            throw SyntaxError{"Until loops cannot have environment variables passed to them"};
+
+        throw SyntaxError{"Unexpected 'until'"};
+    }
+
+    return std::get<Command::Until>(m_command.value);
+}
+
 bool Parser::has_empty_command()
 {
     return std::holds_alternative<Command::Empty>(m_command.value);
@@ -248,6 +278,9 @@ void Parser::parse_token(const Token *token) {
     }
     else if (has_empty_command() && token->type == Token::Type::WORD && token->value == "while") {
         read_commit_while();
+    }
+    else if (has_empty_command() && token->type == Token::Type::WORD && token->value == "until") {
+        read_commit_until();
     }
     else if (has_empty_command() && token->type == Token::Type::WORD && (
              token->value == "then"

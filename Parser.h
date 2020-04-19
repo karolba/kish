@@ -73,6 +73,10 @@ struct Command {
         CommandList condition;
         CommandList body;
     };
+    struct Until {
+        CommandList condition;
+        CommandList body;
+    };
 
     // TODO: to prevent unneccessary copying in run_pipeline:
     std::deque<Redirection> redirections; // TODO: this should be a smart pointer
@@ -80,7 +84,7 @@ struct Command {
     // File descriptors to close in the main shell process after forking
     std::deque<int> pipe_file_descriptors;
 
-    std::variant<Empty, Simple, Compound, If, While> value;
+    std::variant<Empty, Simple, Compound, If, While, Until> value;
 };
 
 class Parser {
@@ -107,6 +111,7 @@ private:
     Command::Compound &get_compound_command();
     Command::If &get_if_command();
     Command::While &get_while_command();
+    Command::Until &get_until_command();
 
     bool has_empty_command();
 
@@ -119,6 +124,7 @@ private:
     void read_commit_compound_command_list();
     void read_commit_if();
     void read_commit_while();
+    void read_commit_until();
 
     const Token *read_command_list_into_until(CommandList& into, const std::vector<std::string_view> &until_command);
 

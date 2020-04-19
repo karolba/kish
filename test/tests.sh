@@ -178,6 +178,13 @@ ktest '
     done
     ' 'in loop'
 ktest '
+    a=false
+    until $a; do
+        echo in loop
+        a=true
+    done
+    ' 'in loop'
+ktest '
     a=true
     while $a; do
         echo in $a loop
@@ -185,6 +192,7 @@ ktest '
     done
     ' 'in true loop'
 ktest 'a=false; while $a; do echo test; done'
+ktest 'a=true; until $a; do echo test; done'
 ktest 'a=true
     while $a; do
         echo $a
@@ -192,6 +200,13 @@ ktest 'a=true
     done
     echo $a | cat
     ' $'true\nfalse'
+ktest 'a=false
+    until $a; do
+        echo $a
+        a=true
+    done
+    echo $a | cat
+    ' $'false\ntrue'
 ktest 'a=true; while $a; do a=false; echo test; done > /dev/stderr' '' 'test'
 ktest 'a=true; while $a; do echo "$a"; a=false; done > /dev/stderr | rev' '' 'true'
 ktest 'then' '' "Syntax error: Unexpected token 'then'" 1
@@ -204,3 +219,5 @@ ktest 'if true; then echo x; fi arg' '' "Syntax error: 'fi' cannot take argument
 ktest 'if true; then echo x; fi { arg; }' '' "Syntax error: 'fi' cannot take arguments" 1
 ktest 'while false; do x; done arg' '' "Syntax error: 'done' cannot take arguments" 1
 ktest 'while false; do x; done { arg; }' '' "Syntax error: 'done' cannot take arguments" 1
+ktest 'until false; do x; done arg' '' "Syntax error: 'done' cannot take arguments" 1
+ktest 'until false; do x; done { arg; }' '' "Syntax error: 'done' cannot take arguments" 1
