@@ -9,6 +9,7 @@
 #include <iostream>
 #include <tuple>
 
+
 static bool is_token_assignment(const Token &token)
 {
     if (token.type != Token::Type::WORD)
@@ -188,7 +189,7 @@ Command::Simple &Parser::get_simple_command()
         throw SyntaxError{"Extra word"};
     }
 
-    return std::get<Command::Simple>(m_command.value);
+    return command_get<Command::Simple>();
 }
 
 Command::Compound &Parser::get_compound_command()
@@ -201,7 +202,7 @@ Command::Compound &Parser::get_compound_command()
         throw SyntaxError{"Compound commands cannot have environment variables passed to them"};
     }
 
-    return std::get<Command::Compound>(m_command.value);
+    return command_get<Command::Compound>();
 }
 
 Command::If &Parser::get_if_command()
@@ -220,7 +221,7 @@ Command::If &Parser::get_if_command()
         throw SyntaxError{"Unexpected if"};
     }
 
-    return std::get<Command::If>(m_command.value);
+    return command_get<Command::If>();
 }
 
 Command::While &Parser::get_while_command()
@@ -239,7 +240,7 @@ Command::While &Parser::get_while_command()
         throw SyntaxError{"Unexpected 'while'"};
     }
 
-    return std::get<Command::While>(m_command.value);
+    return command_get<Command::While>();
 }
 
 Command::Until &Parser::get_until_command()
@@ -258,7 +259,7 @@ Command::Until &Parser::get_until_command()
         throw SyntaxError{"Unexpected 'until'"};
     }
 
-    return std::get<Command::Until>(m_command.value);
+    return command_get<Command::Until>();
 }
 
 bool Parser::has_empty_command()
@@ -270,7 +271,14 @@ void Parser::parse_token(const Token *token) {
     // Reserved words can appear as unquoted first words of commands
     bool can_be_reserved_command = has_empty_command() && token->type == Token::Type::WORD;
 
-    if (is_token_assignment(*token)) {
+    // variable assignments can appear in similar places to reserved words but there may be
+    // multiple assignments per command
+    bool can_be_assignment = can_be_reserved_command || (
+                token->type == Token::Type::WORD
+                && command_is_type<Command::Simple>()
+                && command_get<Command::Simple>().argv.empty());
+
+    if (can_be_assignment && is_token_assignment(*token)) {
         commit_assignment(token->value);
     }
     // Reserved words:

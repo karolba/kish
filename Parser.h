@@ -138,4 +138,9 @@ private:
     bool command_is_type() {
         return std::holds_alternative<T>(m_command.value);
     }
+
+    template <typename T>
+    T& command_get() {
+        return std::get<T>(m_command.value);
+    }
 };
