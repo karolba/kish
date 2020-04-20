@@ -133,4 +133,9 @@ private:
     void commit_and_or_list(const Token* op = nullptr);
 
     std::tuple<CommandList, size_t, const Token *> parse_until(const std::vector<std::string_view> &command);
+
+    template <typename T>
+    bool command_is_type() {
+        return std::holds_alternative<T>(m_command.value);
+    }
 };

@@ -64,12 +64,12 @@ void Parser::commit_redirection(const std::string &op)
 
 void Parser::commit_command()
 {
-    if(std::holds_alternative<Command::Empty>(m_command.value)) {
+    if(command_is_type<Command::Empty>()) {
         if(m_command.redirections.empty())
             return;
     }
 
-    if(std::holds_alternative<Command::Simple>(m_command.value)) {
+    if(command_is_type<Command::Simple>()) {
         if (get_simple_command().variable_assignments.empty()
                 && get_simple_command().argv.empty()
                 && m_command.redirections.empty())
@@ -172,17 +172,17 @@ Command::Simple &Parser::get_simple_command()
         m_command.value = Command::Simple{};
     }
 
-    if(! std::holds_alternative<Command::Simple>(m_command.value)) {
-        if(std::holds_alternative<Command::Compound>(m_command.value))
+    if(! command_is_type<Command::Simple>()) {
+        if(command_is_type<Command::Compound>())
             throw SyntaxError{"{}-lists cannot take arguments"};
 
-        if(std::holds_alternative<Command::If>(m_command.value))
+        if(command_is_type<Command::If>())
             throw SyntaxError{"'fi' cannot take arguments"};
 
-        if(std::holds_alternative<Command::While>(m_command.value))
+        if(command_is_type<Command::While>())
             throw SyntaxError{"'done' cannot take arguments"};
 
-        if(std::holds_alternative<Command::Until>(m_command.value))
+        if(command_is_type<Command::Until>())
             throw SyntaxError{"'done' cannot take arguments"};
 
         throw SyntaxError{"Extra word"};
@@ -197,7 +197,7 @@ Command::Compound &Parser::get_compound_command()
         m_command.value = Command::Compound{};
     }
 
-    if(! std::holds_alternative<Command::Compound>(m_command.value)) {
+    if(! command_is_type<Command::Compound>()) {
         throw SyntaxError{"Compound commands cannot have environment variables passed to them"};
     }
 
@@ -210,11 +210,11 @@ Command::If &Parser::get_if_command()
         m_command.value = Command::If{};
     }
 
-    if(! std::holds_alternative<Command::If>(m_command.value)) {
-        if(std::holds_alternative<Command::Compound>(m_command.value))
+    if(! command_is_type<Command::If>()) {
+        if(command_is_type<Command::Compound>())
             throw SyntaxError{"Missing ';' between '}' and 'if'"};
 
-        if(std::holds_alternative<Command::Simple>(m_command.value))
+        if(command_is_type<Command::Simple>())
             throw SyntaxError{"If statements cannot have environment variables passed to them"};
 
         throw SyntaxError{"Unexpected if"};
@@ -229,11 +229,11 @@ Command::While &Parser::get_while_command()
         m_command.value = Command::While{};
     }
 
-    if(! std::holds_alternative<Command::While>(m_command.value)) {
-        if(std::holds_alternative<Command::Compound>(m_command.value))
+    if(! command_is_type<Command::While>()) {
+        if(command_is_type<Command::Compound>())
             throw SyntaxError{"Missing ';' between '}' and 'while'"};
 
-        if(std::holds_alternative<Command::Simple>(m_command.value))
+        if(command_is_type<Command::Simple>())
             throw SyntaxError{"While loops cannot have environment variables passed to them"};
 
         throw SyntaxError{"Unexpected 'while'"};
@@ -248,11 +248,11 @@ Command::Until &Parser::get_until_command()
         m_command.value = Command::Until{};
     }
 
-    if(! std::holds_alternative<Command::Until>(m_command.value)) {
-        if(std::holds_alternative<Command::Compound>(m_command.value))
+    if(! command_is_type<Command::Until>()) {
+        if(command_is_type<Command::Compound>())
             throw SyntaxError{"Missing ';' between '}' and 'until'"};
 
-        if(std::holds_alternative<Command::Simple>(m_command.value))
+        if(command_is_type<Command::Simple>())
             throw SyntaxError{"Until loops cannot have environment variables passed to them"};
 
         throw SyntaxError{"Unexpected 'until'"};
@@ -263,26 +263,31 @@ Command::Until &Parser::get_until_command()
 
 bool Parser::has_empty_command()
 {
-    return std::holds_alternative<Command::Empty>(m_command.value);
+    return command_is_type<Command::Empty>();
 }
 
 void Parser::parse_token(const Token *token) {
+    // Reserved words can appear as unquoted first words of commands
+    bool can_be_reserved_command = has_empty_command() && token->type == Token::Type::WORD;
+
     if (is_token_assignment(*token)) {
         commit_assignment(token->value);
     }
-    else if (has_empty_command() && token->type == Token::Type::WORD && token->value == "{") {
+    // Reserved words:
+    else if (can_be_reserved_command && token->value == "{") {
         read_commit_compound_command_list();
     }
-    else if (has_empty_command() && token->type == Token::Type::WORD && token->value == "if") {
+    else if (can_be_reserved_command && token->value == "if") {
         read_commit_if();
     }
-    else if (has_empty_command() && token->type == Token::Type::WORD && token->value == "while") {
+    else if (can_be_reserved_command && token->value == "while") {
         read_commit_while();
     }
-    else if (has_empty_command() && token->type == Token::Type::WORD && token->value == "until") {
+    else if (can_be_reserved_command && token->value == "until") {
         read_commit_until();
     }
-    else if (has_empty_command() && token->type == Token::Type::WORD && (
+    // Reserved words that appered in the wrong place (ones not read by read_commit_*)
+    else if (can_be_reserved_command && (
              token->value == "then"
              || token->value == "elif"
              || token->value == "else"
@@ -292,6 +297,7 @@ void Parser::parse_token(const Token *token) {
              || token->value == "esac")) {
         throw SyntaxError{"Unexpected token '" + token->value + "'"};
     }
+    // Lone arguments to a command
     else if (token->type == Token::Type::WORD) {
         commit_argument(token->value);
     }
