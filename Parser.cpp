@@ -77,13 +77,13 @@ void Parser::commit_command()
             return;
     }
 
-    m_pipeline.push_back(std::move(m_command));
+    m_pipeline.commands.push_back(std::move(m_command));
     m_command = {};
 }
 
 void Parser::commit_pipeline(const Token* op)
 {
-    if (m_pipeline.empty())
+    if (m_pipeline.commands.empty() && m_pipeline.negation_prefix == false)
         return;
 
     m_and_or_list.push_back({std::move(m_pipeline), op ? op->value : ""});
@@ -278,6 +278,9 @@ void Parser::parse_token(const Token *token) {
                 && command_is_type<Command::Simple>()
                 && command_get<Command::Simple>().argv.empty());
 
+    // `!` and `time` can only appear at the beggining of a pipeline
+    bool can_be_pipeline_prefix = can_be_reserved_command && m_pipeline.commands.empty();
+
     if (can_be_assignment && is_token_assignment(*token)) {
         commit_assignment(token->value);
     }
@@ -294,6 +297,10 @@ void Parser::parse_token(const Token *token) {
     else if (can_be_reserved_command && token->value == "until") {
         read_commit_until();
     }
+    // Pipeline prefixes:
+    else if (can_be_pipeline_prefix && token->value == "!") {
+        m_pipeline.negation_prefix = !m_pipeline.negation_prefix;
+    }
     // Reserved words that appered in the wrong place (ones not read by read_commit_*)
     else if (can_be_reserved_command && (
              token->value == "then"
@@ -302,7 +309,8 @@ void Parser::parse_token(const Token *token) {
              || token->value == "fi"
              || token->value == "do"
              || token->value == "done"
-             || token->value == "esac")) {
+             || token->value == "esac"
+             || token->value == "!")) {
         throw SyntaxError{"Unexpected token '" + token->value + "'"};
     }
     // Lone arguments to a command

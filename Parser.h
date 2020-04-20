@@ -39,7 +39,10 @@ struct WithFollowingOperator {
 
 struct Command;
 // POSIX: "A pipeline is a sequence of one or more commands separated by the control operator '|'."
-using Pipeline = std::vector<Command>;
+struct Pipeline {
+    std::vector<Command> commands;
+    bool negation_prefix = false; // `! a | b`
+};
 
 // POSIX: "An AND-OR list is a sequence of one or more pipelines separated by the operators "&&" and "||"."
 using AndOrList = std::vector<WithFollowingOperator<Pipeline>>;
@@ -53,6 +56,7 @@ struct Command {
         std::vector<VariableAssignment> variable_assignments; // TODO: this should be a smart pointer
         std::vector<std::string> argv;
     };
+    // TODO: Rename this, POSIX calls this a "brace group"
     struct Compound { // `{ true; false; }`
         CommandList command_list;
     };
@@ -144,3 +148,4 @@ private:
         return std::get<T>(m_command.value);
     }
 };
+

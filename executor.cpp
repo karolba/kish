@@ -715,10 +715,10 @@ static void run_multi_command_pipeline(const Pipeline &pipeline) {
     Pipeline modified = pipeline;
 
     std::vector<pid_t> pids;
-    for(size_t i = 0; i < modified.size(); ++i) {
-        Command &cmd = modified[i];
-        if(i != modified.size() - 1) {
-            Command &next = modified[i + 1];
+    for(size_t i = 0; i < modified.commands.size(); ++i) {
+        Command &cmd = modified.commands[i];
+        if(i != modified.commands.size() - 1) {
+            Command &next = modified.commands[i + 1];
             setup_pipe_between(cmd, next);
         }
 
@@ -739,11 +739,16 @@ static void run_single_command_pipeline(const Command &command) {
 }
 
 static void run_pipeline(const Pipeline &pipeline) {
-    if(pipeline.size() == 1) {
-        run_single_command_pipeline(pipeline.at(0));
-    } else if(pipeline.size() > 1) {
+    if(pipeline.commands.size() == 0) {
+        g.last_return_value = 0;
+    } else if(pipeline.commands.size() == 1) {
+        run_single_command_pipeline(pipeline.commands.at(0));
+    } else if(pipeline.commands.size() > 1) {
         run_multi_command_pipeline(pipeline);
     }
+
+    if(pipeline.negation_prefix)
+        g.last_return_value = !g.last_return_value;
 }
 
 static void run_and_or_list(const AndOrList &and_or_list) {

@@ -222,3 +222,11 @@ ktest 'while false; do x; done arg' '' "Syntax error: 'done' cannot take argumen
 ktest 'while false; do x; done { arg; }' '' "Syntax error: 'done' cannot take arguments" 1
 ktest 'until false; do x; done arg' '' "Syntax error: 'done' cannot take arguments" 1
 ktest 'until false; do x; done { arg; }' '' "Syntax error: 'done' cannot take arguments" 1
+ktest '! cmd1 | ! cmd2' '' "Syntax error: Unexpected token '!'" 1
+ktest '! true' '' '' 1
+ktest '! false' '' '' 0
+ktest '! ! true' '' '' 0
+ktest '! ! ! ! true' '' '' 0
+ktest '! true | true' '' '' 1
+ktest '! false | false' '' '' 0
+ktest 'if ! true || ! true || ! ! false; then echo wrong; fi' '' ''
