@@ -13,6 +13,7 @@
   - `cd` (without `-P` and `-L`)
 - if statements: `if <command-list>; then <command-list>; [else <command-list>]; fi`
 - `while` and `until` loops
+- `for` loops
 - piping and redirecting to/from bulitins/command lists/if statements
 - user defined variables
 - special variables:
