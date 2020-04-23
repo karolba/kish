@@ -230,3 +230,13 @@ ktest '! ! ! ! true' '' '' 0
 ktest '! true | true' '' '' 1
 ktest '! false | false' '' '' 0
 ktest 'if ! true || ! true || ! ! false; then echo wrong; fi' '' ''
+ktest 'for x in; do echo test; done' ''
+ktest 'for x in; do echo test; done | cat' ''
+ktest 'stdin=/dev/stdin; for x in; do echo test; done < $stdin' ''
+ktest 'for x in "1 2" 3; do echo $x; done' $'1 2\n3'
+ktest 'for x in "1 2" 3; do echo $x; done | cat' $'1 2\n3'
+ktest 'for x in "1 2" 3; do echo $x; done | cat' $'1 2\n3'
+ktest $'for x in "1 2" 3\n\n do\n\n\n echo $x\n\n\n done | \n\n cat' $'1 2\n3'
+ktest 'a="1 2" b="3 4"; for x in $a"$b"; do echo $x; done' $'1\n23 4'
+ktest 'for x in 1 2 3; do echo -$x- >> /dev/stderr; echo "[$x]"; done | grep -v 1' $'[2]\n[3]' $'-1-\n-2-\n-3-'
+ktest 'for x do echo $x; done' ''

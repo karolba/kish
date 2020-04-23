@@ -147,6 +147,70 @@ void Parser::read_commit_until() {
     read_command_list_into_until(get_until_command().body, {"done"});
 }
 
+// This function gets called
+//    for [HERE] [in ...]; do ...
+// reads everything until 'done', including the 'done'
+void Parser::read_commit_for() {
+    const Token *variable_name = input_next_token();
+    if(variable_name->type == Token::Type::OPERATOR) {
+        throw SyntaxError{variable_name};
+    }
+    get_for_command().varname = variable_name->value;
+
+    // token: `for x [in|do|;|\n]`
+    const Token *after_varname = input_next_token();
+    if(after_varname == nullptr)
+        throw SyntaxError{"End of input"};
+
+    if(after_varname->type == Token::Type::OPERATOR && (after_varname->value == ";" || after_varname->value == "\n")) {
+        // The `for var; do ...` form
+
+        get_for_command().items = {"\"$@\""}; // `for var; do`  ==  `for var in "$@"; do`
+    } else if(after_varname->type == Token::Type::WORD && after_varname->value == "in") {
+        // The `for var in WORD...; do ...` form
+
+        while((after_varname = input_next_token())) {
+            if(after_varname->type == Token::Type::OPERATOR && after_varname->value != ";" && after_varname->value != "\n")
+                throw SyntaxError{after_varname};
+
+            if(after_varname->type == Token::Type::OPERATOR && (after_varname->value == ";" || after_varname->value == "\n"))
+                break;
+
+            get_for_command().items.emplace_back(after_varname->value);
+        }
+
+        if(after_varname == nullptr)
+            throw SyntaxError{"End of input"};
+    } else if(after_varname->type == Token::Type::WORD && after_varname->value == "do") {
+        // The `for var do ...` form
+
+        input_put_token_back(); // put the `do` back
+    } else {
+        throw SyntaxError{after_varname};
+    }
+
+    const Token *compound_start = input_next_token();
+
+    if(compound_start == nullptr)
+        throw SyntaxError{"End of input"};
+
+    while(compound_start->type == Token::Type::OPERATOR && compound_start->value == "\n") {
+        compound_start = input_next_token();
+        if(compound_start == nullptr)
+            throw SyntaxError{"End of input"};
+    }
+
+    if(compound_start->type == Token::Type::WORD && compound_start->value == "do") {
+        // The `for ...; do ...; done` form
+        read_command_list_into_until(get_for_command().body, {"done"});
+    } else if(compound_start->type == Token::Type::WORD && compound_start->value == "{") {
+        // The old `for ...; { ...; }` form
+        read_command_list_into_until(get_for_command().body, {"}"});
+    } else {
+        throw SyntaxError{compound_start};
+    }
+}
+
 const Token * Parser::read_command_list_into_until(CommandList& into, const std::vector<std::string_view> &until_commands)
 {
     auto sub_tokens = m_input.subspan(m_input_i);
@@ -165,6 +229,14 @@ const Token * Parser::input_next_token()
         return nullptr;
 
     return &m_input[m_input_i++];
+}
+
+void Parser::input_put_token_back()
+{
+    if(m_input_i == 0) {
+        throw SyntaxError{"Tried input_put_token_back on empty token"};
+    }
+    m_input_i -= 1;
 }
 
 Command::Simple &Parser::get_simple_command()
@@ -262,6 +334,25 @@ Command::Until &Parser::get_until_command()
     return command_get<Command::Until>();
 }
 
+Command::For &Parser::get_for_command()
+{
+    if(has_empty_command()) {
+        m_command.value = Command::For{};
+    }
+
+    if(! command_is_type<Command::For>()) {
+        if(command_is_type<Command::Compound>())
+            throw SyntaxError{"Missing ';' between '}' and 'for'"};
+
+        if(command_is_type<Command::Simple>())
+            throw SyntaxError{"For loops cannot have environment variables passed to them"};
+
+        throw SyntaxError{"Unexpected 'for'"};
+    }
+
+    return command_get<Command::For>();
+}
+
 bool Parser::has_empty_command()
 {
     return command_is_type<Command::Empty>();
@@ -296,6 +387,9 @@ void Parser::parse_token(const Token *token) {
     }
     else if (can_be_reserved_command && token->value == "until") {
         read_commit_until();
+    }
+    else if (can_be_reserved_command && token->value == "for") {
+        read_commit_for();
     }
     // Pipeline prefixes:
     else if (can_be_pipeline_prefix && token->value == "!") {

@@ -12,6 +12,7 @@
 // TODO: After C++20 rolls out, switch to std::span
 #include "tcb/span.hpp"
 
+// TODO: Move into Command::Redirection
 struct Redirection {
     enum Type {
         FileWrite, // 1>file
@@ -25,6 +26,7 @@ struct Redirection {
     std::string path {};
 };
 
+// TODO: Move into Command::Simple::VariableAssignment, as VariableAssignment can only exist in a Simple Command.
 struct VariableAssignment {
     std::string name {};
     std::string value {};
@@ -38,6 +40,7 @@ struct WithFollowingOperator {
 };
 
 struct Command;
+
 // POSIX: "A pipeline is a sequence of one or more commands separated by the control operator '|'."
 struct Pipeline {
     std::vector<Command> commands;
@@ -81,6 +84,11 @@ struct Command {
         CommandList condition;
         CommandList body;
     };
+    struct For { // for varname [in WORD...]; do ...
+        std::string varname;
+        std::vector<std::string> items;
+        CommandList body;
+    };
 
     // TODO: to prevent unneccessary copying in run_pipeline:
     std::deque<Redirection> redirections; // TODO: this should be a smart pointer
@@ -88,7 +96,7 @@ struct Command {
     // File descriptors to close in the main shell process after forking
     std::deque<int> pipe_file_descriptors;
 
-    std::variant<Empty, Simple, Compound, If, While, Until> value;
+    std::variant<Empty, Simple, Compound, If, While, Until, For> value;
 };
 
 class Parser {
@@ -99,7 +107,15 @@ public:
 
     CommandList parse();
 
-    struct SyntaxError { std::string explanation; };
+    struct SyntaxError {
+        SyntaxError(const Token *tok)
+            : explanation("Unexpected '" + tok->value + "'") // TODO: quoted(tok->value)
+        {}
+        SyntaxError(const std::string &explanation)
+            : explanation(explanation)
+        {}
+        std::string explanation;
+    };
 private:
     Command m_command;
     Pipeline m_pipeline;
@@ -110,12 +126,14 @@ private:
 
     size_t m_input_i { 0 };
     const Token *input_next_token();
+    void input_put_token_back();
 
     Command::Simple &get_simple_command();
     Command::Compound &get_compound_command();
     Command::If &get_if_command();
     Command::While &get_while_command();
     Command::Until &get_until_command();
+    Command::For &get_for_command();
 
     bool has_empty_command();
 
@@ -129,6 +147,7 @@ private:
     void read_commit_if();
     void read_commit_while();
     void read_commit_until();
+    void read_commit_for();
 
     const Token *read_command_list_into_until(CommandList& into, const std::vector<std::string_view> &until_command);
 

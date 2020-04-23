@@ -467,6 +467,40 @@ static void expand_and_exec_until_command(Command cmd) {
     }
 }
 
+[[noreturn]]
+static void expand_and_exec_for_command(Command cmd) {
+    if(!CommandExpander(&cmd).expand()) {
+        fprintf(stderr, "Command expansion failed\n");
+        exit(1);
+    }
+    for(const Redirection &redir : cmd.redirections) {
+        if(!setup_redirection(redir)) {
+            fprintf(stderr, "kish: could not redirect\n");
+            exit(1);
+        }
+    }
+
+    const Command::For &for_command = std::get<Command::For>(cmd.value);
+
+    std::vector<std::string> expanded_items;
+    for(const std::string &item : for_command.items) {
+        WordExpander(item).expand_into(expanded_items);
+    }
+
+    // Note: for loops should not create a new scope for the looped-over variable
+    // `for x in 1 2 3; do :; done; echo $x` -> 3
+
+    // Note: for loops do not reset $?
+    for(const std::string &item : expanded_items) {
+        g.variables[for_command.varname] = item;
+
+        run_command_list(for_command.body);
+    }
+
+    exit(g.last_return_value);
+}
+
+
 // Runs a pipelined command
 static std::optional<pid_t> run_command_expand_in_subprocess(const Command &cmd) {
     int pid = fork();
@@ -486,6 +520,7 @@ static std::optional<pid_t> run_command_expand_in_subprocess(const Command &cmd)
               [&] (const Command::If) { expand_and_exec_if_command(cmd); },
               [&] (const Command::While) { expand_and_exec_while_command(cmd); },
               [&] (const Command::Until) { expand_and_exec_until_command(cmd); },
+              [&] (const Command::For) { expand_and_exec_for_command(cmd); },
         }, cmd.value);
     }
     return { pid };
@@ -682,6 +717,31 @@ static void run_until_command_expand_in_main_process(Command cmd) {
     }
 }
 
+static void run_for_command_expand_in_main_process(Command cmd) {
+    if(!CommandExpander(&cmd).expand()) {
+        fprintf(stderr, "Command expansion failed\n");
+        g.last_return_value = 1;
+        return;
+    }
+
+    const Command::For &for_command = std::get<Command::For>(cmd.value);
+
+    std::vector<std::string> expanded_items;
+    for(const std::string &item : for_command.items) {
+        WordExpander(item).expand_into(expanded_items);
+    }
+
+    // Note: for loops should not create a new scope for the looped-over variable
+    // `for x in 1 2 3; do :; done; echo $x` -> 3
+
+    // Note: for loops do not reset $?
+    for(const std::string &item : expanded_items) {
+        g.variables[for_command.varname] = item;
+
+        run_command_list(for_command.body);
+    }
+}
+
 // Runs any non-pipelined command
 static void run_command_expand_in_main_process(const Command &cmd) {
     std::visit(utils::overloaded {
@@ -691,6 +751,7 @@ static void run_command_expand_in_main_process(const Command &cmd) {
           [&] (const Command::If) { run_if_command_expand_in_main_process(cmd); },
           [&] (const Command::While) { run_while_command_expand_in_main_process(cmd); },
           [&] (const Command::Until) { run_until_command_expand_in_main_process(cmd); },
+          [&] (const Command::For) { run_for_command_expand_in_main_process(cmd); },
     }, cmd.value);
 }
 
