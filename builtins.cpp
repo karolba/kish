@@ -4,6 +4,7 @@
 #include "builtins/true.h"
 #include "builtins/help.h"
 #include "builtins/cd.h"
+#include "builtins/colon.h"
 
 std::optional<BuiltinHandler> find_builtin(const std::string &name) {
     if(name == "false")
@@ -17,6 +18,9 @@ std::optional<BuiltinHandler> find_builtin(const std::string &name) {
 
     if(name == "cd")
         return builtin_cd;
+
+    if(name == ":")
+        return builtin_colon;
 
     return {};
 }
