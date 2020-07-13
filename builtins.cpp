@@ -6,21 +6,22 @@
 #include "builtins/cd.h"
 #include "builtins/colon.h"
 
+#include <map>
+
 std::optional<BuiltinHandler> find_builtin(const std::string &name) {
-    if(name == "false")
-        return builtin_false;
+    const static std::unordered_map<std::string, BuiltinHandler> builtins {
+        {"cd", builtin_cd},
+        {"false", builtin_false},
+        {"true", builtin_true},
+        {"help", builtin_help},
+        {":", builtin_colon},
+    };
 
-    if(name == "true")
-        return builtin_true;
+    auto foundBuiltin = builtins.find(name);
 
-    if(name == "help")
-        return builtin_help;
-
-    if(name == "cd")
-        return builtin_cd;
-
-    if(name == ":")
-        return builtin_colon;
-
-    return {};
+    if(foundBuiltin != builtins.end()) {
+        return foundBuiltin->second;
+    } else {
+        return {};
+    }
 }
