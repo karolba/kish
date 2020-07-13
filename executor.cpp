@@ -355,7 +355,7 @@ static void expand_and_exec_simple_command(Command cmd) {
 }
 
 [[noreturn]]
-static void expand_and_exec_compound_command(Command expanded) {
+static void expand_and_exec_brace_group(Command expanded) {
     // expand redirections:
     if(!CommandExpander(&expanded).expand()) {
         fprintf(stderr, "Command expansion failed\n");
@@ -367,8 +367,8 @@ static void expand_and_exec_compound_command(Command expanded) {
             exit(1);
         }
     }
-    const Command::Compound &compound = std::get<Command::Compound>(expanded.value);
-    run_command_list(compound.command_list);
+    const Command::BraceGroup &brace_group = std::get<Command::BraceGroup>(expanded.value);
+    run_command_list(brace_group.command_list);
     exit(g.last_return_value);
 }
 
@@ -516,7 +516,7 @@ static std::optional<pid_t> run_command_expand_in_subprocess(const Command &cmd)
         std::visit(utils::overloaded {
               [&] (const Command::Empty) { expand_and_exec_empty_command(cmd); },
               [&] (const Command::Simple) { expand_and_exec_simple_command(cmd); },
-              [&] (const Command::Compound) { expand_and_exec_compound_command(cmd); },
+              [&] (const Command::BraceGroup) { expand_and_exec_brace_group(cmd); },
               [&] (const Command::If) { expand_and_exec_if_command(cmd); },
               [&] (const Command::While) { expand_and_exec_while_command(cmd); },
               [&] (const Command::Until) { expand_and_exec_until_command(cmd); },
@@ -607,19 +607,19 @@ static void run_simple_command_expand_in_main_process(const Command &cmd) {
         run_nonempty_simple_command_expand_in_main_process(cmd);
 }
 
-// Runs non-pipelined compound commands (e.g `{ a; b; } > c`)
-static void run_compound_command_expand_in_main_process(Command cmd) {
+// Runs non-pipelined brace groups (e.g `{ a; b; } > c`)
+static void run_brace_group_expand_in_main_process(Command cmd) {
     if(!CommandExpander(&cmd).expand()) {
         fprintf(stderr, "Command expansion failed\n");
         g.last_return_value = 1;
         return;
     }
 
-    const Command::Compound &compound_command = std::get<Command::Compound>(cmd.value);
+    const Command::BraceGroup &brace_group = std::get<Command::BraceGroup>(cmd.value);
 
     auto saved_fds = setup_redirections_save_old_fds(cmd.redirections);
 
-    run_command_list(compound_command.command_list);
+    run_command_list(brace_group.command_list);
 
     restore_old_fds(saved_fds);
 }
@@ -747,7 +747,7 @@ static void run_command_expand_in_main_process(const Command &cmd) {
     std::visit(utils::overloaded {
           [&] (const Command::Empty) { run_empty_command_expand_in_main_process(cmd); },
           [&] (const Command::Simple) { run_simple_command_expand_in_main_process(cmd); },
-          [&] (const Command::Compound) { run_compound_command_expand_in_main_process(cmd); },
+          [&] (const Command::BraceGroup) { run_brace_group_expand_in_main_process(cmd); },
           [&] (const Command::If) { run_if_command_expand_in_main_process(cmd); },
           [&] (const Command::While) { run_while_command_expand_in_main_process(cmd); },
           [&] (const Command::Until) { run_until_command_expand_in_main_process(cmd); },

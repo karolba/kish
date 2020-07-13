@@ -59,8 +59,7 @@ struct Command {
         std::vector<VariableAssignment> variable_assignments; // TODO: this should be a smart pointer
         std::vector<std::string> argv;
     };
-    // TODO: Rename this, POSIX calls this a "brace group"
-    struct Compound { // `{ true; false; }`
+    struct BraceGroup { // `{ true; false; }`
         CommandList command_list;
     };
     // TODO: Technically `if` and others are compound commands too,
@@ -96,7 +95,7 @@ struct Command {
     // File descriptors to close in the main shell process after forking
     std::deque<int> pipe_file_descriptors;
 
-    std::variant<Empty, Simple, Compound, If, While, Until, For> value;
+    std::variant<Empty, Simple, BraceGroup, If, While, Until, For> value;
 };
 
 class Parser {
@@ -129,7 +128,7 @@ private:
     void input_put_token_back();
 
     Command::Simple &get_simple_command();
-    Command::Compound &get_compound_command();
+    Command::BraceGroup &get_compound_command();
     Command::If &get_if_command();
     Command::While &get_while_command();
     Command::Until &get_until_command();

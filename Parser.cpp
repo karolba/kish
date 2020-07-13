@@ -246,7 +246,7 @@ Command::Simple &Parser::get_simple_command()
     }
 
     if(! command_is_type<Command::Simple>()) {
-        if(command_is_type<Command::Compound>())
+        if(command_is_type<Command::BraceGroup>())
             throw SyntaxError{"{}-lists cannot take arguments"};
 
         if(command_is_type<Command::If>())
@@ -264,17 +264,17 @@ Command::Simple &Parser::get_simple_command()
     return command_get<Command::Simple>();
 }
 
-Command::Compound &Parser::get_compound_command()
+Command::BraceGroup &Parser::get_compound_command()
 {
     if(has_empty_command()) {
-        m_command.value = Command::Compound{};
+        m_command.value = Command::BraceGroup{};
     }
 
-    if(! command_is_type<Command::Compound>()) {
+    if(! command_is_type<Command::BraceGroup>()) {
         throw SyntaxError{"Compound commands cannot have environment variables passed to them"};
     }
 
-    return command_get<Command::Compound>();
+    return command_get<Command::BraceGroup>();
 }
 
 Command::If &Parser::get_if_command()
@@ -284,7 +284,7 @@ Command::If &Parser::get_if_command()
     }
 
     if(! command_is_type<Command::If>()) {
-        if(command_is_type<Command::Compound>())
+        if(command_is_type<Command::BraceGroup>())
             throw SyntaxError{"Missing ';' between '}' and 'if'"};
 
         if(command_is_type<Command::Simple>())
@@ -303,7 +303,7 @@ Command::While &Parser::get_while_command()
     }
 
     if(! command_is_type<Command::While>()) {
-        if(command_is_type<Command::Compound>())
+        if(command_is_type<Command::BraceGroup>())
             throw SyntaxError{"Missing ';' between '}' and 'while'"};
 
         if(command_is_type<Command::Simple>())
@@ -322,7 +322,7 @@ Command::Until &Parser::get_until_command()
     }
 
     if(! command_is_type<Command::Until>()) {
-        if(command_is_type<Command::Compound>())
+        if(command_is_type<Command::BraceGroup>())
             throw SyntaxError{"Missing ';' between '}' and 'until'"};
 
         if(command_is_type<Command::Simple>())
@@ -341,7 +341,7 @@ Command::For &Parser::get_for_command()
     }
 
     if(! command_is_type<Command::For>()) {
-        if(command_is_type<Command::Compound>())
+        if(command_is_type<Command::BraceGroup>())
             throw SyntaxError{"Missing ';' between '}' and 'for'"};
 
         if(command_is_type<Command::Simple>())
