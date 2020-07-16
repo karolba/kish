@@ -30,7 +30,7 @@ bool CommandExpander::expand()
             assignment.value = builder;
 
             // TODO: CommandExpander should not setenv
-            setenv(assignment.name.c_str(), assignment.value.c_str(), 1);
+            //setenv(assignment.name.c_str(), assignment.value.c_str(), 1);
             //dbg() << expanded[0] << '\n';
         }
     }
