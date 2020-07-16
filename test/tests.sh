@@ -244,3 +244,4 @@ ktest ':' ''
 ktest 'false; :' ''
 ktest ': should ignore arguments' ''
 
+[[ $failed -eq 0 ]]
