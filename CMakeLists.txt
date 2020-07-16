@@ -31,6 +31,7 @@ add_executable(kish
     builtins/help.cpp
     builtins/cd.cpp
     builtins/colon.cpp
+    builtins/read.cpp
 
     # Just so those files show up in the Qt Creator project view
     test/tests.sh
