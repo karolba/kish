@@ -38,7 +38,6 @@ static bool touch_file(const std::string &path, const char *mode) {
     FILE *f = fopen(path.c_str(), mode);
     if(!f) {
         perror("shell");
-        fclose(f);
         return false;
     }
 
