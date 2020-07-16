@@ -49,7 +49,7 @@ ktest 'false || echo ok' 'ok'
 ktest 'echo 123 > /dev/stderr | cat' '' '123'
 ktest 'echo "abc\\def"' 'abc\def'
 ktest 'a=1; echo a=$a' 'a=1'
-#ktest 'echo "abc\\\\def"' 'abc\def' # TODO: '\\' -> '\' in echo
+ktest 'echo "abc\\\\def"' 'abc\\def'
 ktest 'a=1 b=1\ 2; printf "%s|" "$a"$b"$b"'"'\$b'" '11|21 2$b|'
 ktest "printf '%s\\n' 'abc"'\\'"def'" 'abc\\def'
 ktest '{ echo ab; echo cd; } | rev | tac' $'dc\nba'
