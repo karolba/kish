@@ -26,13 +26,6 @@ struct Redirection {
     std::string path {};
 };
 
-// TODO: Move into Command::Simple::VariableAssignment, as VariableAssignment can only exist in a Simple Command.
-struct VariableAssignment {
-    std::string name {};
-    std::string value {};
-};
-
-
 template <typename T>
 struct WithFollowingOperator {
     T val;
@@ -55,7 +48,12 @@ using CommandList = std::vector<WithFollowingOperator<AndOrList>>;
 
 struct Command {
     using Empty = std::monostate;
-    struct Simple {
+    struct Simple { // [a=b] cmd [arg1] [arg2]
+        struct VariableAssignment {
+            std::string name {};
+            std::string value {};
+        };
+
         std::vector<VariableAssignment> variable_assignments; // TODO: this should be a smart pointer
         std::vector<std::string> argv;
     };

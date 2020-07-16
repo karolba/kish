@@ -21,8 +21,8 @@
 
 static void run_command_list(const CommandList &cl);
 
-static void set_variables(const std::vector<VariableAssignment> &variable_assignments) {
-    for(const VariableAssignment &va : variable_assignments) {
+static void set_variables(const std::vector<Commad::Simple::VariableAssignment> &variable_assignments) {
+    for(const Commad::Simple::VariableAssignment &va : variable_assignments) {
         std::string value;
         if (!WordExpander(va.value).expand_into_space_joined(value)) {
             std::cerr << "Failed expansion\n";
@@ -284,7 +284,7 @@ static void exec_expanded_simple_command(const Command &expanded_command, const 
     }
 
     // environment variables from `a=b c`
-    for(const VariableAssignment &va : expanded_simple.variable_assignments) {
+    for(const Commad::Simple::VariableAssignment &va : expanded_simple.variable_assignments) {
         setenv(va.name.c_str(), va.value.c_str(), 1);
     }
 
