@@ -16,24 +16,39 @@ add_compile_options(
     -pedantic
 )
 
+# This list contains headers and tests so that Qt Creator shows them nicely in the Projects view
 add_executable(kish
     main.cpp
+    Token.h
     Parser.cpp
+    Parser.h
     Tokenizer.cpp
+    Tokenizer.h
     WordExpander.cpp
+    WordExpander.h
     CommandExpander.cpp
+    CommandExpander.h
     utils.cpp
+    utils.h
     Global.cpp
+    Global.h
     builtins.cpp
+    builtins.h
     executor.cpp
+    executor.h
     builtins/true.cpp
+    builtins/true.h
     builtins/false.cpp
+    builtins/false.h
     builtins/help.cpp
+    builtins/help.h
     builtins/cd.cpp
+    builtins/cd.h
     builtins/colon.cpp
+    builtins/colon.h
     builtins/read.cpp
+    builtins/read.h
 
-    # Just so those files show up in the Qt Creator project view
     test/tests.sh
     README.md
 )
