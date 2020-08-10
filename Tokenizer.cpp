@@ -116,14 +116,17 @@ std::vector<Token> Tokenizer::tokenize(const Tokenizer::Options &opt) {
                 tokenize(sub_opt);
 
             } else if(next_ch == '{') { // `${`
+                // TODO: is this correct? ${}-expansion is treated here like command substitution (minus '#'),
+                // yet it isn't in the first name part. Can't think of a case where this would fail though.
                 Options sub_opt;
                 sub_opt.delimit = false;
                 sub_opt.until = '}';
-                sub_opt.handleComments = false;
+                sub_opt.handleComments = false; // don't treat '#' as comments (`${#var}`)
 
                 m_input_i += strlen("${");
                 tokenize(sub_opt);
             }
+            //
 
             size_t subtokenized_len = m_input_i - index_before_subtokenization + 1; // `+ 1` because of ')' or '}'
             current_token.append(m_input.substr(index_before_subtokenization, subtokenized_len));
