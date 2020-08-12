@@ -8,6 +8,8 @@ struct Global {
     std::unordered_map<std::string, std::string> variables;
     int last_return_value = 0; // "$?"
 
+    std::vector<std::unordered_map<std::string, std::string>> scoped_variables;
+
     std::optional<std::string> get_variable(const std::string &name);
 
     struct SavedFd {

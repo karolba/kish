@@ -20,8 +20,9 @@ public:
          * Options#until should equal ')' and Options#countToUntil should be '('.
          * so that $( (cmd; (cmd)) ) is tokenized properly
          */
-        std::optional<char> countToUntil;
-        std::optional<char> until;
+        std::optional<char> countToUntil; // TODO: counting parens is incorrect because the case statement
+        std::optional<char> until;        //       has unmatched parens. This will work fine until case is implemented
+                                          //       It also breaks in the case of `x=$(echo ${a/)/})`
 
         /* should the tokenizer handle comments? it's useful to have this option when
          * subtokenizing ${}, when # means string length and not a comment

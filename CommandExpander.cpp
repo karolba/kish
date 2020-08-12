@@ -9,25 +9,23 @@ bool CommandExpander::expand()
 {
     if(std::holds_alternative<Command::Simple>(m_command->value)) {
         // values of assigned variables should always be space-joined
-        // so that `var="$@"` is to be equivalent to `var="$*"`
+        // so that when $IFS starts with ' ', `var="$@"` is to be equivalent to `var="$*"`
         // and `var=$(echo a b)` equivalent to `var='a b'`
         auto &simple_command = std::get<Command::Simple>(m_command->value);
         for (auto& assignment : simple_command.variable_assignments) {
-            std::vector<std::string> expanded;
-            // TODO: expand_into_space_joined
-            if(! WordExpander(assignment.value).expand_into(expanded)) {
+            std::string expanded;
+
+            WordExpander::Options opt;
+            opt.commonExpansions = true;
+            opt.fieldSplitting = false;
+            opt.pathnameExpansion = WordExpander::Options::NEVER;
+            opt.variableAtAsMultipleFields = false;
+            if(! WordExpander(opt, assignment.value).expand_into(expanded)) {
                 word_expansion_failed(assignment.value);
                 return false;
             }
 
-            std::string builder;
-            for (size_t i = 0; i < expanded.size(); ++i) {
-                if (i != 0) {
-                    builder.push_back(' ');
-                }
-                builder += expanded[i];
-            }
-            assignment.value = builder;
+            assignment.value = expanded;
 
             // TODO: CommandExpander should not setenv
             //setenv(assignment.name.c_str(), assignment.value.c_str(), 1);
@@ -35,11 +33,16 @@ bool CommandExpander::expand()
         }
     }
 
-    // behave like bash, make `> $empty_var` and `> $(echo 1 2)` illegal
     for (auto& redirection : m_command->redirections) {
         if(redirection.type != Redirection::Rewiring) {
             std::vector<std::string> expanded;
-            if(! WordExpander(redirection.path).expand_into(expanded)) {
+
+            WordExpander::Options opt;
+            opt.commonExpansions = true;
+            opt.fieldSplitting = false;
+            opt.pathnameExpansion = WordExpander::Options::ONLY_IF_SINGLE_RESULT;
+            opt.variableAtAsMultipleFields = false;
+            if(! WordExpander(opt, redirection.path).expand_into(expanded)) {
                 word_expansion_failed(redirection.path);
                 return false;
             }
@@ -58,7 +61,12 @@ bool CommandExpander::expand()
         std::vector<std::string> unexpanded_argv = simple_command.argv;
         simple_command.argv.clear();
         for (const std::string& arg : unexpanded_argv) {
-            if (!WordExpander(arg).expand_into(simple_command.argv)) {
+            WordExpander::Options opt;
+            opt.commonExpansions = true;
+            opt.fieldSplitting = true;
+            opt.pathnameExpansion = WordExpander::Options::ALWAYS;
+            opt.variableAtAsMultipleFields = true;
+            if (!WordExpander(opt, arg).expand_into(simple_command.argv)) {
                 fprintf(stderr, "Shell: %s: failed expanding word\n", arg.c_str());
             }
         }

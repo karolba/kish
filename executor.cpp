@@ -21,10 +21,15 @@
 
 static void run_command_list(const CommandList &cl);
 
-static void set_variables(const std::vector<Command::Simple::VariableAssignment> &variable_assignments) {
+static void set_unexpanded_variables(const std::vector<Command::Simple::VariableAssignment> &variable_assignments) {
     for(const Command::Simple::VariableAssignment &va : variable_assignments) {
         std::string value;
-        if (!WordExpander(va.value).expand_into_space_joined(value)) {
+        WordExpander::Options opt;
+        opt.commonExpansions = true;
+        opt.fieldSplitting = false;
+        opt.pathnameExpansion = WordExpander::Options::NEVER;
+        opt.variableAtAsMultipleFields = false;
+        if (!WordExpander(opt, va.value).expand_into(value)) {
             std::cerr << "Failed expansion\n";
             g.last_return_value = 1;
             return;
@@ -57,7 +62,12 @@ static bool touch_files(const std::deque<Redirection> &redirections) {
         }
 
         std::string path;
-        if(! WordExpander(redir.path).expand_into_single_word(path)) {
+        WordExpander::Options opt;
+        opt.commonExpansions = true;
+        opt.fieldSplitting = false;
+        opt.pathnameExpansion = WordExpander::Options::ONLY_IF_SINGLE_RESULT;
+        opt.variableAtAsMultipleFields = false;
+        if(! WordExpander(opt, redir.path).expand_into(path)) {
             std::cerr << "shell: Ambiguous redirect\n";
             return false;
         }
@@ -327,7 +337,7 @@ static void expand_and_exec_simple_command(Command cmd) {
         // That's why g.last_return_value is reset first, then any substitution is done
         g.last_return_value = 0;
 
-        set_variables(simple_command.variable_assignments);
+        set_unexpanded_variables(simple_command.variable_assignments);
     }
 
     // redirections get expanded before evaluating variable assignments in zsh,
@@ -483,7 +493,12 @@ static void expand_and_exec_for_command(Command cmd) {
 
     std::vector<std::string> expanded_items;
     for(const std::string &item : for_command.items) {
-        WordExpander(item).expand_into(expanded_items);
+        WordExpander::Options opt;
+        opt.commonExpansions = true;
+        opt.fieldSplitting = true;
+        opt.pathnameExpansion = WordExpander::Options::ALWAYS;
+        opt.variableAtAsMultipleFields = true;
+        WordExpander(opt, item).expand_into(expanded_items);
     }
 
     // Note: for loops should not create a new scope for the looped-over variable
@@ -555,7 +570,7 @@ static void run_empty_simple_command_expand_in_main_process(const Command &cmd) 
         // That's why g.last_return_value is reset first, then any substitution is done
         g.last_return_value = 0;
 
-        set_variables(simple_command.variable_assignments);
+        set_unexpanded_variables(simple_command.variable_assignments);
     }
 
     // redirections get expanded before evaluating variable assignments in zsh,
@@ -727,7 +742,12 @@ static void run_for_command_expand_in_main_process(Command cmd) {
 
     std::vector<std::string> expanded_items;
     for(const std::string &item : for_command.items) {
-        WordExpander(item).expand_into(expanded_items);
+        WordExpander::Options opt;
+        opt.commonExpansions = true;
+        opt.fieldSplitting = true;
+        opt.pathnameExpansion = WordExpander::Options::ALWAYS;
+        opt.variableAtAsMultipleFields = true;
+        WordExpander(opt, item).expand_into(expanded_items);
     }
 
     // Note: for loops should not create a new scope for the looped-over variable

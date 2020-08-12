@@ -8,37 +8,59 @@
 
 class WordExpander {
 public:
-    explicit WordExpander(const std::string_view word_view)
-        : m_word_view(word_view)
+    struct Options {
+        // Do tilde expansion, parameter expansion, command substitution, and arithmetic expansion
+        // Being able to disable this is useful in `cat << "EOF"` where we only want quote removal
+        bool commonExpansions = false;
+
+        // Should "$@" expand to multiple fields or behave like "$*" with IFS=' '
+        // (used for variable assignments, where (with IFS=' ') `var="$*"` === `var="$@"`)
+        bool variableAtAsMultipleFields = false;
+
+        // Do field splitting according to $IFS
+        bool fieldSplitting = false;
+
+        // Do pathname expansion (like in `echo *`)
+        enum { ALWAYS, NEVER, ONLY_IF_SINGLE_RESULT } pathnameExpansion = NEVER;
+
+        // If set, stop when the given unquoted char is encountered.
+        // When set to ")"  [TODO: ...]
+        std::optional<char> expandUntilUnquotedChar;
+    };
+
+    explicit WordExpander(const Options &opt, std::string_view input)
+        : opt(opt)
+        , input(input)
     { }
 
     bool expand_into(std::vector<std::string> &buf);
-    bool expand_into_space_joined(std::string &buf);
-    bool expand_into_single_word(std::string &buf);
+
+    // Expands into a single string
+    // if the result of the word expansion consists of multiple fields, returns false
+    bool expand_into(std::string &buf);
 
 private:
-    enum State {
-        FREE,
-        SINGLE_QUOTED,
-        DOUBLE_QUOTED,
-    };
+    Options opt;
+    std::string_view input;
+    std::vector<std::string> *out;
+    std::vector<size_t> pathname_expansion_pattern_location;
 
-    State m_state { FREE };
+    void add_character_literal(char ch);
+    void add_character_unquoted(char ch);
+    void add_character_quoted(char ch);
 
-    const std::string_view m_word_view;
-    size_t m_word_i { 0 };
+    void mark_pathname_expansion_character_location();
 
-    std::vector<std::string>* m_out;
+    void delimit_by_whitespace();
+    void delimit_by_non_whitespace();
 
-    std::string m_current_word;
+    void do_pathname_expansion();
 
-    // Should en empty expended word expand to "" (`''`) or to nothing (`$empty_var`, ``)?
-    bool m_current_word_can_be_empty_expansion { true };
-
-    std::string consume_variable_name();
-    void expand_variable(const std::string &variable_name, bool in_double_quotes);
-    void delimit_word();
-
-    std::optional<char> next_char();
-    std::optional<char> peek_char();
+    size_t expand_tilda(size_t input_position);
+    size_t expand_command_substitution_unquoted(size_t input_position);
+    size_t expand_command_substitution_double_quoted(size_t input_position);
+    void expand_special_variable_free(char varname);
+    void expand_special_variable_double_quoted(char varname);
+    size_t expand_variable_free(size_t variable_name_begin);
+    size_t expand_variable_double_quoted(size_t variable_name_begin);
 };

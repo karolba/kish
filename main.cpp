@@ -11,6 +11,9 @@ void initialize_variables() {
 }
 
 static bool echo_prompt() {
+    // TODO: remember that the string from get_current_dir_name() should
+    //       1. be free()d
+    //       2. not be used at all since it's not POSIX
     return !!(std::cout << get_current_dir_name() << " $ " << std::flush);
 }
 

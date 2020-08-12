@@ -4,6 +4,7 @@
 
 Global g;
 
+// TODO: return std::optional<std::string_view> ?
 std::optional<std::string> Global::get_variable(const std::string &name)
 {
     if(name == "?") {
