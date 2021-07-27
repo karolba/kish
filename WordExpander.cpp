@@ -245,7 +245,7 @@ size_t WordExpander::expand_command_substitution_free(size_t input_position)
     std::vector<Token> tokens = tokenizer.tokenize(opt);
 
     std::string output;
-    run_capture_output(tokens, output);
+    subshell_capture_output(tokens, output);
 
     for(char ch : output) {
         add_character_unquoted(ch);
@@ -268,7 +268,7 @@ size_t WordExpander::expand_command_substitution_double_quoted(size_t input_posi
     }
 
     // capture to the output directly
-    run_capture_output(tokens, out->back());
+    subshell_capture_output(tokens, out->back());
 
     return input_position + tokenizer.consumedChars();
 }

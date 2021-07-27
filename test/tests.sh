@@ -251,5 +251,9 @@ ktest 'echo _$(echo x >/dev/stderr)_' __ x
 ktest 'echo $(echo $(echo $(echo x)))' x
 ktest 'echo $(echo x) >/dev/stderr' '' x
 ktest 'echo asda | { a=$(read a; echo "[$a]"); echo "{$a}"; }' '{[asda]}'
+ktest 'a=$(false)' '' '' 1
+ktest 'a=$(true)' '' '' 0
+ktest 'if a=$(true); then echo ok; fi' ok
+ktest 'if a=$(false); then echo ok; else echo not-ok; fi' not-ok
 
 [[ $failed -eq 0 ]]

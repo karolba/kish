@@ -864,17 +864,8 @@ void run_from_string(const std::string &str) {
     run_command_list(parsed);
 }
 
-// this should do a subshell - rename?
-void run_capture_output(const std::vector<Token> &tokens, std::string &out)
+void subshell_capture_output(const std::vector<Token> &tokens, std::string &out)
 {
-    // TODO:
-    // - setup a pipe
-    // - fork (subshell)
-    //     - dup2 stdout to the pipe
-    //     - run tokens (TODO: general optimization (not only for $()) - if last command is a
-    //                         simple command, do an exec instead)
-    // - read the subshell's output into &out until it dies
-
     int pipefd[2];
     if(pipe(pipefd) == -1) {
         perror("pipe");
@@ -914,7 +905,7 @@ void run_capture_output(const std::vector<Token> &tokens, std::string &out)
     ssize_t nread;
     char *buf = new char[BUFSIZ];
     while((nread = read(pipefd[0], buf, BUFSIZ)) > 0) {
-        out.append(buf, nread);
+        out.append(buf, static_cast<size_t>(nread));
         has_read_something = true;
     }
     delete[] buf;
@@ -925,4 +916,6 @@ void run_capture_output(const std::vector<Token> &tokens, std::string &out)
     if(has_read_something && out.back() == '\n') {
         out.pop_back();
     }
+
+    utils::wait_for_one(pid);
 }

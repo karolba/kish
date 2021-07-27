@@ -3,5 +3,5 @@
 #include <vector>
 #include "Token.h"
 
-void run_capture_output(const std::vector<Token> &tokens, std::string &out);
+void subshell_capture_output(const std::vector<Token> &tokens, std::string &out);
 void run_from_string(const std::string &str);
