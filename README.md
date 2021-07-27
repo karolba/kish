@@ -20,6 +20,7 @@
   - return value from last command - `$?`
   - current pid - `$$`
 - inline environment variables (`HOME='/' command`)
+- `$()` command substitution
 
 ## Building
 
