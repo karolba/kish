@@ -255,5 +255,9 @@ ktest 'a=$(false)' '' '' 1
 ktest 'a=$(true)' '' '' 0
 ktest 'if a=$(true); then echo ok; fi' ok
 ktest 'if a=$(false); then echo ok; else echo not-ok; fi' not-ok
+ktest 'printf "[%s]\\n" "1" "" "2"' $'[1]\n[]\n[2]'
+ktest "echo '' '' '' 1" '   1'
+ktest "echo 1 '' '' 2 2" '1   2 2'
+ktest "printf %s, '' '' 2 2" ',,2,2,'
 
 [[ $failed -eq 0 ]]

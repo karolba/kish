@@ -27,9 +27,12 @@ bool WordExpander::expand_into(std::vector<std::string> &buf)
 {
     out = &buf;
 
-    // TODO: Do these lines need to be changed to support $IFS?
-    if(buf.size() != 0 && buf.back().size() != 0)
-        buf.emplace_back();
+    bool can_expand_to_empty_word = true;
+
+    // Assume we can't expand to an empty word (for example, the word contains quotations
+    // like ""$var). If the assumption turns out to be incorrect and we did not expand to
+    // anything, pop that empty string back at the end of this function
+    out->emplace_back();
 
     enum { FREE, SINGLE_QUOTED, DOUBLE_QUOTED } state = FREE;
 
@@ -44,8 +47,10 @@ bool WordExpander::expand_into(std::vector<std::string> &buf)
 
         if(state == FREE && ch == '"') {
             state = DOUBLE_QUOTED;
+            can_expand_to_empty_word = false;
         } else if(state == FREE && ch == '\'') {
             state = SINGLE_QUOTED;
+            can_expand_to_empty_word = false;
         } else if(state == DOUBLE_QUOTED && ch == '"') {
             state = FREE;
         } else if(state == SINGLE_QUOTED && ch == '\'') {
@@ -80,6 +85,16 @@ bool WordExpander::expand_into(std::vector<std::string> &buf)
     }
 
     do_pathname_expansion();
+
+    // Note that word expansion might result in multiple words - out->back() being empty
+    // does not necessarily mean the expansion did not expand to anything
+    // For example:
+    //     set -- 1 2 ''; echo "$@"
+    // However, this only matters in situations where quotes are used - so can_expand_to_empty_word is false.
+    // That's why it's not necessary to check if out->size() has changed due to expansion to multiple words.
+    if(can_expand_to_empty_word && out->back().empty()) {
+        out->pop_back();
+    }
 
     return true;
 }
@@ -137,9 +152,6 @@ void WordExpander::add_character_unquoted(char ch)
 
 void WordExpander::add_character_quoted(char ch)
 {
-    if(out->size() == 0)
-        out->push_back({});
-
     out->back().push_back(ch);
 }
 
@@ -156,7 +168,7 @@ void WordExpander::delimit_by_whitespace()
 
     // If delimiting by whitespace, don't delimit multiple times if there's adjoining whitespace
     // For example, "a  b" -> {"a", "b"}
-    if(out->size() == 0 || out->back().size() == 0)
+    if(out->back().size() == 0)
         return;
 
     delimit_by_non_whitespace();
@@ -227,11 +239,7 @@ size_t WordExpander::expand_tilda(size_t username_begin)
         }
     }
 
-    if(out->size() == 0) {
-        out->emplace_back(expanded);
-    } else {
-        out->back().append(expanded);
-    }
+    out->back().append(expanded);
 
     return username_end - 1;
 }
@@ -262,11 +270,6 @@ size_t WordExpander::expand_command_substitution_double_quoted(size_t input_posi
     Tokenizer tokenizer(input.substr(input_position));
     std::vector<Token> tokens = tokenizer.tokenize(opt);
 
-    // make sure we have at least something as the output
-    if(out->size() == 0) {
-        out->emplace_back("");
-    }
-
     // capture to the output directly
     subshell_capture_output(tokens, out->back());
 
@@ -287,11 +290,7 @@ void WordExpander::expand_special_variable_double_quoted(char varname)
 {
     std::optional<std::string> var_value = g.get_variable(std::string(1, varname));
     if(var_value.has_value()) {
-        if(out->size() == 0) {
-            out->emplace_back(var_value.value());
-        } else {
-            out->back().append(var_value.value());
-        }
+        out->back().append(var_value.value());
     }
 }
 
@@ -327,11 +326,7 @@ size_t WordExpander::expand_variable_double_quoted(size_t variable_name_begin)
     std::optional<std::string> variable_value = g.get_variable(variable_name);
 
     if(variable_value.has_value()) {
-        if(out->size() == 0) {
-            out->emplace_back(variable_value.value());
-        } else {
-            out->back().append(variable_value.value());
-        }
+        out->back().append(variable_value.value());
     }
 
     return variable_name_end - 1;
