@@ -244,5 +244,12 @@ ktest 'for x do echo $x; done' ''
 ktest ':' ''
 ktest 'false; :' ''
 ktest ': should ignore arguments' ''
+ktest 'echo $(echo x)' x
+ktest 'echo "$(echo x)"' x
+ktest 'echo _"$(echo x)_"' _x_
+ktest 'echo _$(echo x >/dev/stderr)_' __ x
+ktest 'echo $(echo $(echo $(echo x)))' x
+ktest 'echo $(echo x) >/dev/stderr' '' x
+ktest 'echo asda | { a=$(read a; echo "[$a]"); echo "{$a}"; }' '{[asda]}'
 
 [[ $failed -eq 0 ]]
