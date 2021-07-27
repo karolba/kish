@@ -8,8 +8,8 @@
 
 class Tokenizer {
 public:
-    explicit Tokenizer(const std::string& input)
-        : m_input(input)
+    explicit Tokenizer(const std::string_view input)
+        : input(input)
     { }
 
     struct Options {
@@ -36,8 +36,9 @@ public:
     };
 
     std::vector<Token> tokenize(const Options &opt = Options());
+    size_t consumedChars();
 
 private:
-    std::string m_input;
-    size_t m_input_i = 0;
+    std::string_view input;
+    size_t input_i = 0;
 };

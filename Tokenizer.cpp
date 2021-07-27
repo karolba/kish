@@ -42,17 +42,17 @@ std::vector<Token> Tokenizer::tokenize(const Tokenizer::Options &opt) {
     // Count `(`s in `$( (cmd) )`
     int openParensCount = 0;
 
-    for(; m_input_i < m_input.length(); m_input_i++) {
-        char ch = m_input[m_input_i];
+    for(; input_i < input.length(); input_i++) {
+        char ch = input[input_i];
 
         // IEEE Std 1003.1-2017 Shell Command Language 2.3.2
-        if (in_operator && !quoted_single && !quoted_double && can_extend_operator(m_input[m_input_i - 1], ch)) {
+        if (in_operator && !quoted_single && !quoted_double && can_extend_operator(input[input_i - 1], ch)) {
             current_token.push_back(ch);
             continue;
         }
 
         // 2.3.3
-        if (in_operator && !can_extend_operator(m_input[m_input_i - 1], ch)) {
+        if (in_operator && !can_extend_operator(input[input_i - 1], ch)) {
             if(opt.delimit)
                 delimit(output, current_token, Token::Type::OPERATOR);
 
@@ -64,13 +64,13 @@ std::vector<Token> Tokenizer::tokenize(const Tokenizer::Options &opt) {
         if (!quoted_single && ch == '\\') {
             current_token.push_back(ch);
 
-            if (m_input_i + 1 == m_input.length()) {
+            if (input_i + 1 == input.length()) {
                 fprintf(stderr, "Syntax error: Nothing after a backslash\n");
                 exit(1);
             }
             // TODO: newline joining and continue if can get more input
-            m_input_i += 1;
-            current_token.push_back(m_input[m_input_i]);
+            input_i += 1;
+            current_token.push_back(input[input_i]);
             continue;
         }
 
@@ -100,10 +100,10 @@ std::vector<Token> Tokenizer::tokenize(const Tokenizer::Options &opt) {
         // Shell Command Language 2.3.5
         // Recursively tokenize command substitiution ($() and ``), arithmetic expansion ($(()) and $[])
         // and parameter expansion (${}, can have whitespace in them sometimes) 
-        if(!quoted_single && ch == '$' && m_input_i + 1 < m_input.length()) {
-            char next_ch = m_input[m_input_i + 1];
+        if(!quoted_single && ch == '$' && input_i + 1 < input.length()) {
+            char next_ch = input[input_i + 1];
 
-            size_t index_before_subtokenization = m_input_i;
+            size_t index_before_subtokenization = input_i;
 
             if(next_ch == '(') { // `$(`
                 Options sub_opt;
@@ -112,7 +112,7 @@ std::vector<Token> Tokenizer::tokenize(const Tokenizer::Options &opt) {
                 sub_opt.until = ')';
                 sub_opt.handleComments = true;
 
-                m_input_i += strlen("$(");
+                input_i += strlen("$(");
                 tokenize(sub_opt);
 
             } else if(next_ch == '{') { // `${`
@@ -123,13 +123,13 @@ std::vector<Token> Tokenizer::tokenize(const Tokenizer::Options &opt) {
                 sub_opt.until = '}';
                 sub_opt.handleComments = false; // don't treat '#' as comments (`${#var}`)
 
-                m_input_i += strlen("${");
+                input_i += strlen("${");
                 tokenize(sub_opt);
             }
             //
 
-            size_t subtokenized_len = m_input_i - index_before_subtokenization + 1; // `+ 1` because of ')' or '}'
-            current_token.append(m_input.substr(index_before_subtokenization, subtokenized_len));
+            size_t subtokenized_len = input_i - index_before_subtokenization + 1; // `+ 1` because of ')' or '}'
+            current_token.append(input.substr(index_before_subtokenization, subtokenized_len));
             continue;
         }
         // TODO: ``
@@ -190,8 +190,8 @@ std::vector<Token> Tokenizer::tokenize(const Tokenizer::Options &opt) {
 
         // 2.3.9
         if (opt.handleComments && ch == '#') {
-            while (m_input_i < m_input.length() && m_input[m_input_i] != '\n')
-                ++m_input_i;
+            while (input_i < input.length() && input[input_i] != '\n')
+                ++input_i;
             continue;
         }
 
@@ -218,4 +218,9 @@ std::vector<Token> Tokenizer::tokenize(const Tokenizer::Options &opt) {
     }
 
     return output;
+}
+
+size_t Tokenizer::consumedChars()
+{
+    return input_i;
 }

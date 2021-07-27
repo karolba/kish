@@ -57,7 +57,7 @@ private:
     void do_pathname_expansion();
 
     size_t expand_tilda(size_t input_position);
-    size_t expand_command_substitution_unquoted(size_t input_position);
+    size_t expand_command_substitution_free(size_t input_position);
     size_t expand_command_substitution_double_quoted(size_t input_position);
     void expand_special_variable_free(char varname);
     void expand_special_variable_double_quoted(char varname);

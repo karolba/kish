@@ -3,6 +3,8 @@
 #include <string>
 #include <string.h>
 #include "Global.h"
+#include "Tokenizer.h"
+#include "executor.h"
 
 #include <pwd.h>
 #include <errno.h>
@@ -63,9 +65,9 @@ bool WordExpander::expand_into(std::vector<std::string> &buf)
         } else if(state == DOUBLE_QUOTED && ch == '$' && can_start_variable_name(next_ch.value_or('\0'))) {
             i = expand_variable_double_quoted(i + 1); // TODO: add a test that fails if this does expand_variable_free
         } else if(state == FREE && ch == '$' && next_ch.value_or('\0') == '(') {
-            i = expand_command_substitution_unquoted(i + 1);
+            i = expand_command_substitution_free(i + 2);
         } else if(state == DOUBLE_QUOTED && ch == '$' && next_ch.value_or('\0') == '(') {
-            i = expand_command_substitution_double_quoted(i + 1);
+            i = expand_command_substitution_double_quoted(i + 2);
         } else if(state == FREE && ch == '~' && (!prev_ch.has_value() || prev_ch.value() == ':')) {
             i = expand_tilda(i + 1);
         } else if(state == SINGLE_QUOTED) {
@@ -234,46 +236,41 @@ size_t WordExpander::expand_tilda(size_t username_begin)
     return username_end - 1;
 }
 
-size_t WordExpander::expand_command_substitution_unquoted(size_t input_position)
+size_t WordExpander::expand_command_substitution_free(size_t input_position)
 {
-    // TODO: this function
+    Tokenizer::Options opt;
+    opt.countToUntil = '(';
+    opt.until = ')';
+    Tokenizer tokenizer(input.substr(input_position));
+    std::vector<Token> tokens = tokenizer.tokenize(opt);
 
-    Options opt;
-    opt.commonExpansions = true;
-    opt.variableAtAsMultipleFields = false;
-    opt.fieldSplitting = false;
-    opt.pathnameExpansion = Options::ALWAYS;
+    std::string output;
+    run_capture_output(tokens, output);
 
-    std::string expanded;
-    WordExpander(opt, input.substr(input_position)).expand_into(expanded);
-
-    for(char ch : expanded) {
+    for(char ch : output) {
         add_character_unquoted(ch);
     }
 
-    return input_position;
+    return input_position + tokenizer.consumedChars();
 }
 
 size_t WordExpander::expand_command_substitution_double_quoted(size_t input_position)
 {
-    // TODO: this function
+    Tokenizer::Options opt;
+    opt.countToUntil = '(';
+    opt.until = ')';
+    Tokenizer tokenizer(input.substr(input_position));
+    std::vector<Token> tokens = tokenizer.tokenize(opt);
 
-    Options opt;
-    opt.commonExpansions = true;
-    opt.variableAtAsMultipleFields = false;
-    opt.fieldSplitting = false;
-    opt.pathnameExpansion = Options::ALWAYS;
-
-    std::string expanded;
-    WordExpander(opt, input.substr(input_position)).expand_into(expanded);
-
+    // make sure we have at least something as the output
     if(out->size() == 0) {
-        out->emplace_back(expanded);
-    } else {
-        out->back().append(expanded);
+        out->emplace_back("");
     }
 
-    return input_position;
+    // capture to the output directly
+    run_capture_output(tokens, out->back());
+
+    return input_position + tokenizer.consumedChars();
 }
 
 void WordExpander::expand_special_variable_free(char varname)

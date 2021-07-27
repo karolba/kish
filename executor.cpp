@@ -851,7 +851,7 @@ static void run_command_list(const CommandList &cl) {
 
 void run_from_string(const std::string &str) {
     std::vector<Token> tokens = Tokenizer(str).tokenize();
-    std::optional<CommandList> parsed;
+    CommandList parsed;
 
     try {
         parsed = Parser(tokens).parse();
@@ -861,5 +861,68 @@ void run_from_string(const std::string &str) {
         return;
     }
 
-    run_command_list(*parsed);
+    run_command_list(parsed);
+}
+
+// this should do a subshell - rename?
+void run_capture_output(const std::vector<Token> &tokens, std::string &out)
+{
+    // TODO:
+    // - setup a pipe
+    // - fork (subshell)
+    //     - dup2 stdout to the pipe
+    //     - run tokens (TODO: general optimization (not only for $()) - if last command is a
+    //                         simple command, do an exec instead)
+    // - read the subshell's output into &out until it dies
+
+    int pipefd[2];
+    if(pipe(pipefd) == -1) {
+        perror("pipe");
+        g.last_return_value = 1;
+        return;
+    }
+
+    int pid = fork();
+    if(pid == -1) {
+        perror("fork");
+        g.last_return_value = 1;
+        return;
+    }
+    if(pid == 0) {
+        close(pipefd[0]);
+
+        if(!setup_rewiring({ Redirection::Rewiring, STDOUT_FILENO, pipefd[1] }))
+            exit(1);
+
+        CommandList parsed;
+
+        try {
+            parsed = Parser(tokens).parse();
+        } catch(const Parser::SyntaxError &se) {
+            std::cerr << "Syntax error: " << se.explanation << "\n";
+            exit(1);
+        }
+
+        run_command_list(parsed);
+        close(pipefd[1]); // TODO: ?
+        exit(g.last_return_value);
+    }
+    close(pipefd[1]);
+
+    bool has_read_something = false;
+
+    ssize_t nread;
+    char *buf = new char[BUFSIZ];
+    while((nread = read(pipefd[0], buf, BUFSIZ)) > 0) {
+        out.append(buf, nread);
+        has_read_something = true;
+    }
+    delete[] buf;
+
+    close(pipefd[0]);
+
+    // If the output ends with a newline, trim it
+    if(has_read_something && out.back() == '\n') {
+        out.pop_back();
+    }
 }
