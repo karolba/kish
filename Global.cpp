@@ -14,10 +14,20 @@ std::optional<std::string> Global::get_variable(const std::string &name)
 
     // $0, $1, ${123}, ...
     if(name.length() >= 1 && utils::no_locale_isdigit(name.at(0))) {
-        int arg_i = atoi(name.c_str());
+        size_t arg_i = atoll(name.c_str());
         if(arg_i >= argv.size())
             return { "" };
         return { argv.at(arg_i) };
+    }
+
+    if(name == "*") {
+        std::string all_args {};
+        for(size_t i = 1; i < g.argv.size(); i++) {
+            if(i != 1)
+                all_args.push_back(' ');
+            all_args.append(g.argv.at(i));
+        }
+        return { all_args };
     }
 
     auto search = g.variables.find(name);

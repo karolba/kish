@@ -14,7 +14,7 @@
 
 
 static bool is_one_letter_variable_name(char ch) {
-    return utils::no_locale_isdigit(ch) || strchr("!@#$?-", ch) != nullptr;
+    return utils::no_locale_isdigit(ch) || strchr("!@#$?-*", ch) != nullptr;
 }
 
 static bool can_start_variable_name(char ch) {
