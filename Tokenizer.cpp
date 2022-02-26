@@ -7,7 +7,7 @@
 #include "Token.h"
 
 static bool can_start_operator(char c) {
-    return strchr("&<>;|\n", c) != nullptr;
+    return strchr("&<>;|()\n", c) != nullptr;
 }
 
 static bool can_extend_operator(char c1, char c2) {
@@ -19,7 +19,8 @@ static bool can_extend_operator(char c1, char c2) {
         (c1 == '>' && c2 == '>') ||
         (c1 == '<' && c2 == '&') ||
         (c1 == '>' && c2 == '&') ||
-        (c1 == '<' && c2 == '>');
+        (c1 == '<' && c2 == '>') ||
+        (c1 == '(' && c2 == ')');
 }
 
 static void delimit(std::vector<Token> &output, std::string &current_token, Token::Type token_type) {

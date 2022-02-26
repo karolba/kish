@@ -211,6 +211,31 @@ void Parser::read_commit_for() {
     }
 }
 
+// This function gets called
+//     fname () [HERE] { :; }
+// with `fname` already (wrongly) parsed as Command::Simple
+void Parser::read_commit_function_definition()
+{
+    std::string function_name = get_simple_command().argv.at(0);
+    m_command.value = Command::FunctionDefinition{.name = function_name};
+
+    const Token *after_function_name = input_next_token();
+    if(after_function_name == nullptr)
+        throw SyntaxError{"End of input"};
+
+    if(after_function_name->type == Token::Type::WORD && after_function_name->value == "{") {
+        // The `fname() { ...; }` form
+        read_command_list_into_until(command_get<Command::FunctionDefinition>().body, {"}"});
+    } else {
+        // Something else, like `fname() echo 1`
+
+        // Put what we've read back
+        input_put_token_back();
+
+        throw SyntaxError{"zsh-style short functions (f() echo) are not yet supported"};
+    }
+}
+
 const Token * Parser::read_command_list_into_until(CommandList& into, const std::vector<std::string_view> &until_commands)
 {
     auto sub_tokens = m_input.subspan(m_input_i);
@@ -372,6 +397,12 @@ void Parser::parse_token(const Token *token) {
     // `!` and `time` can only appear at the beggining of a pipeline
     bool can_be_pipeline_prefix = can_be_reserved_command && m_pipeline.commands.empty();
 
+    // Can operators "(" ")" start a function definition ( f() { :; } )
+    bool can_be_function_definition =
+            command_is_type<Command::Simple>()
+            && command_get<Command::Simple>().argv.size() == 1
+            && command_get<Command::Simple>().variable_assignments.size() == 0;
+
     if (can_be_assignment && is_token_assignment(*token)) {
         commit_assignment(token->value);
     }
@@ -407,6 +438,11 @@ void Parser::parse_token(const Token *token) {
              || token->value == "!")) {
         throw SyntaxError{"Unexpected token '" + token->value + "'"};
     }
+    // Function definition
+    else if (can_be_function_definition && token->type == Token::Type::OPERATOR && token->value == "()") {
+        read_commit_function_definition();
+    }
+    /* TODO: `function a { :; }` and `function b() { :; }` forms */
     // Lone arguments to a command
     else if (token->type == Token::Type::WORD) {
         commit_argument(token->value);

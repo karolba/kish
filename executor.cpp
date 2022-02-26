@@ -282,7 +282,7 @@ static void restore_old_fds(const std::deque<int> &old_fds) {
 }
 
 [[noreturn]]
-static void exec_expanded_simple_command(const Command &expanded_command, const bool search_for_builitin) {
+static void exec_expanded_simple_command(const Command &expanded_command, const bool search_for_builitin_or_function) {
     const Command::Simple &expanded_simple = std::get<Command::Simple>(expanded_command.value);
 
     for(const Redirection &redir : expanded_command.redirections) {
@@ -297,11 +297,24 @@ static void exec_expanded_simple_command(const Command &expanded_command, const 
         setenv(va.name.c_str(), va.value.c_str(), 1);
     }
 
-    if(search_for_builitin) {
+    if(search_for_builitin_or_function) {
         auto builtin = find_builtin(expanded_simple.argv.at(0));
         if(builtin) {
             int error_code = builtin.value()(expanded_simple);
             exit(error_code);
+        }
+
+        if(g.functions.contains(expanded_simple.argv.at(0))) {
+            // Redirections and inline environment variables for the function are already set up above.
+
+            // Replace "$@" to function's argv without remembering it, as we will be exiting shortly anyway
+            g.argv = expanded_simple.argv;
+
+            // Copy the command list as a function can redefine itself (f() { f() { :; }; })
+            CommandList function_command_list = g.functions.at(expanded_simple.argv.at(0));
+            run_command_list(function_command_list);
+
+            exit(g.last_return_value);
         }
     }
 
@@ -514,6 +527,18 @@ static void expand_and_exec_for_command(Command cmd) {
     exit(g.last_return_value);
 }
 
+// f() { :; } | g() { :; }
+[[noreturn]]
+static void expand_and_exec_function_definition_command(Command cmd) {
+    if(!CommandExpander(&cmd).expand()) {
+        fprintf(stderr, "Command expansion failed\n");
+        exit(1);
+    }
+
+    // defining a function in a pipeline doesn't really make sense
+    // so don't do anything, probably just like other shells
+    exit(0);
+}
 
 // Runs a pipelined command
 static std::optional<pid_t> run_command_expand_in_subprocess(const Command &cmd) {
@@ -535,6 +560,7 @@ static std::optional<pid_t> run_command_expand_in_subprocess(const Command &cmd)
               [&] (const Command::While) { expand_and_exec_while_command(cmd); },
               [&] (const Command::Until) { expand_and_exec_until_command(cmd); },
               [&] (const Command::For) { expand_and_exec_for_command(cmd); },
+              [&] (const Command::FunctionDefinition) { expand_and_exec_function_definition_command(cmd); },
         }, cmd.value);
     }
     return { pid };
@@ -546,6 +572,34 @@ static void run_builitin_in_main_process(BuiltinHandler &builtin, const Command 
 
     auto old_fds = setup_redirections_save_old_fds(expanded_command.redirections);
     g.last_return_value = builtin(simple_command);
+    restore_old_fds(old_fds);
+}
+
+// Runs a non-pipelined shell function with possible redirections
+static void run_function_in_main_process(const Command &expanded_command) {
+    const auto &simple_command = std::get<Command::Simple>(expanded_command.value);
+
+    /* TODO: handle inline environment variables */
+    if(! simple_command.variable_assignments.empty()) {
+        std::cerr << "kish: Inline environment variables passed to functions are not yet implemented\n";
+        g.last_return_value = 1;
+        return;
+    }
+
+    auto old_fds = setup_redirections_save_old_fds(expanded_command.redirections);
+
+    // Temporarily replace "$@"
+    std::vector<std::string> old_argv{std::move(g.argv)};
+    g.argv = simple_command.argv;
+
+    // Make a copy, as a function can modify itself while running (f() { f() { :; }; })
+    CommandList command_list = g.functions.at(simple_command.argv.at(0));
+
+    run_command_list(command_list);
+
+    // Restore "$@"
+    g.argv = std::move(old_argv);
+
     restore_old_fds(old_fds);
 }
 
@@ -595,7 +649,13 @@ static void run_nonempty_simple_command_expand_in_main_process(Command expanded)
 
     auto builtin = find_builtin(expanded_simple_command.argv.at(0));
     if(builtin) {
+        /* TODO: inline environment variables should be treated like variables here */
+        /* this will be useful with (IFS=: read -r a b c) */
         run_builitin_in_main_process(builtin.value(), expanded);
+    } else if(g.functions.contains(expanded_simple_command.argv.at(0))) {
+        /* TODO: inline environment variables should expand to environment variables here */
+        /* and return back to their state */
+        run_function_in_main_process(expanded);
     } else {
         int pid = fork();
         if(pid == -1) {
@@ -761,6 +821,21 @@ static void run_for_command_expand_in_main_process(Command cmd) {
     }
 }
 
+static void run_function_definition_command_expand_in_main_process(Command cmd) {
+    if(!CommandExpander(&cmd).expand()) {
+        fprintf(stderr, "Command expansion failed\n");
+        g.last_return_value = 1;
+        return;
+    }
+
+    const Command::FunctionDefinition &function_definition_command = std::get<Command::FunctionDefinition>(cmd.value);
+
+    g.functions[function_definition_command.name] = function_definition_command.body;
+
+    /* TODO */
+    g.last_return_value = 0;
+}
+
 // Runs any non-pipelined command
 static void run_command_expand_in_main_process(const Command &cmd) {
     std::visit(utils::overloaded {
@@ -771,6 +846,7 @@ static void run_command_expand_in_main_process(const Command &cmd) {
           [&] (const Command::While) { run_while_command_expand_in_main_process(cmd); },
           [&] (const Command::Until) { run_until_command_expand_in_main_process(cmd); },
           [&] (const Command::For) { run_for_command_expand_in_main_process(cmd); },
+          [&] (const Command::FunctionDefinition) { run_function_definition_command_expand_in_main_process(cmd); },
     }, cmd.value);
 }
 

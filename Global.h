@@ -2,13 +2,18 @@
 #include <string>
 #include <vector>
 #include <unordered_map>
+#include "Parser.h"
 
 struct Global {
+    std::unordered_map<std::string, CommandList> functions;
 
     std::unordered_map<std::string, std::string> variables;
     int last_return_value = 0; // "$?"
 
     std::vector<std::unordered_map<std::string, std::string>> scoped_variables;
+
+    // The "$@". Temporarily replaced with different values when in a function
+    std::vector<std::string> argv;
 
     std::optional<std::string> get_variable(const std::string &name);
 

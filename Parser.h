@@ -8,6 +8,7 @@
 #include <optional>
 #include <string_view>
 #include <deque>
+#include <memory>
 
 // TODO: After C++20 rolls out, switch to std::span
 #include "tcb/span.hpp"
@@ -86,6 +87,10 @@ struct Command {
         std::vector<std::string> items;
         CommandList body;
     };
+    struct FunctionDefinition {
+        std::string name;
+        CommandList body;
+    };
 
     // TODO: to prevent unneccessary copying in run_pipeline:
     std::deque<Redirection> redirections; // TODO: this should be a smart pointer
@@ -93,7 +98,7 @@ struct Command {
     // File descriptors to close in the main shell process after forking
     std::deque<int> pipe_file_descriptors;
 
-    std::variant<Empty, Simple, BraceGroup, If, While, Until, For> value;
+    std::variant<Empty, Simple, BraceGroup, If, While, Until, For, FunctionDefinition> value;
 };
 
 class Parser {
@@ -145,6 +150,7 @@ private:
     void read_commit_while();
     void read_commit_until();
     void read_commit_for();
+    void read_commit_function_definition();
 
     const Token *read_command_list_into_until(CommandList& into, const std::vector<std::string_view> &until_command);
 
