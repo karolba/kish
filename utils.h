@@ -8,6 +8,17 @@
 
 namespace utils {
 
+/*
+ * Don't use isdigit(3) or isalpha(3) from the standard library, because on glibc these functions
+ * needlessly depend on the current locale
+ */
+inline bool no_locale_isdigit(char ch) {
+    return ch >= '0' && ch <= '9';
+}
+inline bool no_locale_isalpha(char ch) {
+    return no_locale_isdigit(ch) || (ch >= 'a' && ch <= 'z') || (ch >= 'A' && ch <= 'Z');
+}
+
 // Helper class for inline std::visit invocation
 // Example usage:
 //          std::visit(utils::overloaded {

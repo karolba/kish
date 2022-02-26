@@ -8,30 +8,21 @@
 
 #include <pwd.h>
 #include <errno.h>
+#include "utils.h"
 
 #include <iostream>
 
-/*
- * Don't use isdigit(3) or isalpha(3) from the standard library, because on glibc these functions
- * needlessly depend on the current locale
- */
-static bool no_locale_isdigit(char ch) {
-    return ch >= '0' && ch <= '9';
-}
-static bool no_locale_isalpha(char ch) {
-    return no_locale_isdigit(ch) || (ch >= 'a' && ch <= 'z') || (ch >= 'A' && ch <= 'Z');
-}
 
 static bool is_one_letter_variable_name(char ch) {
-    return no_locale_isdigit(ch) || strchr("!@#$?-", ch) != nullptr;
+    return utils::no_locale_isdigit(ch) || strchr("!@#$?-", ch) != nullptr;
 }
 
 static bool can_start_variable_name(char ch) {
-    return no_locale_isalpha(ch) || ch == '_';
+    return utils::no_locale_isalpha(ch) || ch == '_';
 }
 
 static bool can_be_in_variable_name(char ch) {
-    return no_locale_isalpha(ch) || ch == '_';
+    return utils::no_locale_isalpha(ch) || ch == '_';
 }
 
 bool WordExpander::expand_into(std::vector<std::string> &buf)
