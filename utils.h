@@ -4,6 +4,7 @@
 #include <sstream>
 #include <sys/wait.h>
 #include <functional>
+#include <optional>
 
 namespace utils {
 
