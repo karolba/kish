@@ -22,7 +22,7 @@ static bool can_start_variable_name(char ch) {
 }
 
 static bool can_be_in_variable_name(char ch) {
-    return utils::no_locale_isalpha(ch) || ch == '_';
+    return utils::no_locale_isalnum(ch) || ch == '_';
 }
 
 bool WordExpander::expand_into(std::vector<std::string> &buf)
@@ -199,7 +199,7 @@ void WordExpander::do_pathname_expansion()
 size_t WordExpander::expand_tilda(size_t username_begin)
 {
     size_t username_end = username_begin;
-    while(username_end < input.size() && (isalnum(input[username_end]) || strchr("._-", input[username_end]) != nullptr)) {
+    while(username_end < input.size() && (utils::no_locale_isalnum(input[username_end]) || strchr("._-", input[username_end]) != nullptr)) {
         username_end++;
     }
 
@@ -280,6 +280,11 @@ size_t WordExpander::expand_command_substitution_double_quoted(size_t input_posi
 
 void WordExpander::expand_special_variable_free(char varname)
 {
+    // Treat free unquoted $@ like unquoted $*
+    if(varname == '@') {
+        varname = '*';
+    }
+
     std::optional<std::string> var_value = g.get_variable(std::string(1, varname));
     if(var_value.has_value()) {
         for(char ch : var_value.value()) {
@@ -290,9 +295,20 @@ void WordExpander::expand_special_variable_free(char varname)
 
 void WordExpander::expand_special_variable_double_quoted(char varname)
 {
-    std::optional<std::string> var_value = g.get_variable(std::string(1, varname));
-    if(var_value.has_value()) {
-        out->back().append(var_value.value());
+    if(varname == '@') {
+        // "$@"
+        if(g.argv.size() <= 1) {
+            // TODO
+        } else {
+            // TODO
+        }
+    } else {
+        // "$*", "$1", "$!", ...
+
+        std::optional<std::string> var_value = g.get_variable(std::string(1, varname));
+        if(var_value.has_value()) {
+            out->back().append(var_value.value());
+        }
     }
 }
 

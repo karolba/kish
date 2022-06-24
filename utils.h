@@ -16,7 +16,10 @@ inline bool no_locale_isdigit(char ch) {
     return ch >= '0' && ch <= '9';
 }
 inline bool no_locale_isalpha(char ch) {
-    return no_locale_isdigit(ch) || (ch >= 'a' && ch <= 'z') || (ch >= 'A' && ch <= 'Z');
+    return (ch >= 'a' && ch <= 'z') || (ch >= 'A' && ch <= 'Z');
+}
+inline bool no_locale_isalnum(char ch) {
+    return no_locale_isalpha(ch) || no_locale_isdigit(ch);
 }
 
 // Helper class for inline std::visit invocation

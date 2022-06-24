@@ -8,6 +8,7 @@
 #include "builtins/read.h"
 
 #include <map>
+#include <unordered_map>
 
 std::optional<BuiltinHandler> find_builtin(const std::string &name) {
     const static std::unordered_map<std::string, BuiltinHandler> builtins {
