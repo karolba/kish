@@ -9,6 +9,9 @@ include_directories(
     tcbrindle-span/include
 )
 
+add_subdirectory(replxx)
+link_libraries(replxx)
+
 add_compile_options(
     -W
     -Wall
