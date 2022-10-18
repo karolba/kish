@@ -152,6 +152,9 @@ void Parser::read_commit_until() {
 // reads everything until 'done', including the 'done'
 void Parser::read_commit_for() {
     const Token *variable_name = input_next_token();
+    if(variable_name == nullptr)
+        throw SyntaxError{"End of input"};
+
     if(variable_name->type == Token::Type::OPERATOR) {
         throw SyntaxError{variable_name};
     }

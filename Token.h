@@ -11,4 +11,5 @@ struct Token {
 
     Type type;
     std::string value;
+    int position;
 };

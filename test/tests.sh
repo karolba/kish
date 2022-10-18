@@ -1,32 +1,40 @@
 #!/bin/bash
-KISH=${1:-./kish}
+#KISH=${1:-./kish}
 tmpfile=$(mktemp -t kish-test.XXXXXXXXXX)
-declare -i passed=0 failed=0
+passed=0 failed=0
+nl='
+'
 ktest() {
-	local stdout= stderr= errcode= reason=
-	stdout=$("$KISH" -c "$1" 2> "$tmpfile")
-	errcode=$?
-	stderr=$(cat "$tmpfile")
-	if [[ $errcode -ne ${4:-0} ]]; then
-		reason+="  \$? = $errcode"$'\n'
-	fi
-	if [[ "$stdout" != "$2" ]]; then
-		reason+=$'  stdout:\n'
-		reason+="    expected: [$2]"$'\n'
-		reason+="    but got:  [$stdout]"$'\n'
-	fi
-	if [[ "$stderr" != "$3" ]]; then
-		reason+=$'  stderr:\n'
-		reason+="    expected: [$3]"$'\n'
-		reason+="    but got:  [$stderr]"$'\n'
-	fi
-	if [[ $reason ]]; then
-		printf "TEST FAILED: '%s'\\n" "$1"
-		printf '%s' "$reason"
-		(( failed += 1 ))
-	else
-		(( passed += 1 ))
-	fi
+        stdout= stderr= errcode= reason=
+        stdout=$("$KISH" -c "$1") #2> "$tmpfile")
+        errcode=$?
+        stderr=$(cat "$tmpfile")
+        if [ $# = 4 ]; then
+            expected_errcode=$4
+        else
+            expected_errcode=0
+        fi
+        if [ $errcode != $expected_errcode ]; then
+                reason="$reason  \$? = $errcode$nl"
+        fi
+        if [ "$stdout" != "$2" ]; then
+                reason="  stdout:$nl"
+                reason="    expected: [$2]$nl"
+                reason="    but got:  [$stdout]$nl"
+        fi
+        if [ "$stderr" != "$3" ]; then
+                reason="  stderr:$nl"
+                reason="    expected: [$3]$nl"
+                reason="    but got:  [$stderr]$nl"
+        fi
+        if [ "$reason" ]; then
+                printf "TEST FAILED: '%s'\\n" "$1"
+                printf '%s' "$reason"
+                failed=$(echo "1+$failed" | bc)
+        else
+                passed=$(echo "1+$passed" | bc)
+        fi
+        echo "DEBUG: Passed=$passed, failed=$failed"
 }
 trap 'echo Passed tests: $passed, failed tests: $failed; rm -f $tmpfile' EXIT
 
@@ -260,4 +268,4 @@ ktest "echo '' '' '' 1" '   1'
 ktest "echo 1 '' '' 2 2" '1   2 2'
 ktest "printf %s, '' '' 2 2" ',,2,2,'
 
-[[ $failed -eq 0 ]]
+[ $failed -eq 0 ]
