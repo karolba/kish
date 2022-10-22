@@ -77,6 +77,7 @@ void Parser::commit_command()
             return;
     }
 
+    m_command.end_token = &m_input[m_input_i - 1];
     m_pipeline.commands.push_back(std::move(m_command));
     m_command = {};
 }
@@ -152,6 +153,9 @@ void Parser::read_commit_until() {
 // reads everything until 'done', including the 'done'
 void Parser::read_commit_for() {
     const Token *variable_name = input_next_token();
+    if(variable_name == nullptr)
+        throw SyntaxError{"End of input"};
+
     if(variable_name->type == Token::Type::OPERATOR) {
         throw SyntaxError{variable_name};
     }
@@ -253,6 +257,11 @@ const Token * Parser::input_next_token()
     if (m_input_i >= m_input.size())
         return nullptr;
 
+    // For syntax highlighting:
+    if(m_command.start_token == nullptr) {
+        m_command.start_token = &m_input[m_input_i];
+    }
+
     return &m_input[m_input_i++];
 }
 
@@ -261,6 +270,13 @@ void Parser::input_put_token_back()
     if(m_input_i == 0) {
         throw SyntaxError{"Tried input_put_token_back on empty token"};
     }
+
+    // For syntax highlighting:
+    if(m_command.start_token == &m_input[m_input_i - 1]) {
+        m_command.start_token = nullptr;
+    }
+
+
     m_input_i -= 1;
 }
 

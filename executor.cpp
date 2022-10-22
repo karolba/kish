@@ -211,7 +211,7 @@ static bool setup_redirection(const Redirection &redir) {
 /*
  * Used to save (and later restore, via restore_old_fds()) fds when executing, among others:
  * - redirections applied to builtins: `echo $var > file`
- * - redirections to non-pipelined command lists: `{ a; b; } > file`
+ * - redirections to non-pipelined command lists: `{ a; b; } > file`, and other compound commands
  */
 static std::deque<int> setup_redirections_save_old_fds(const std::deque<Redirection> &redirs) {
     // The naive approach to handle this would be
@@ -926,7 +926,15 @@ static void run_command_list(const CommandList &cl) {
 }
 
 void run_from_string(const std::string &str) {
-    std::vector<Token> tokens = Tokenizer(str).tokenize();
+    std::vector<Token> tokens;
+    try {
+        tokens = Tokenizer(str).tokenize();
+    } catch(const Tokenizer::SyntaxError &se) {
+        std::cerr << "Syntax error: " << se.explanation << "\n";
+        g.last_return_value = 1;
+        return;
+    }
+
     CommandList parsed;
 
     try {

@@ -35,10 +35,19 @@ public:
         bool delimit = true;
     };
 
+    struct SyntaxError {
+        SyntaxError(const std::string &explanation)
+            : explanation(explanation)
+        {}
+        std::string explanation;
+    };
+
     std::vector<Token> tokenize(const Options &opt = Options());
     size_t consumedChars();
 
 private:
     std::string_view input;
     size_t input_i = 0;
+
+    void delimit(std::vector<Token> &output, std::string &current_token, Token::Type token_type, int position);
 };

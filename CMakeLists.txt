@@ -9,6 +9,9 @@ include_directories(
     tcbrindle-span/include
 )
 
+add_subdirectory(replxx)
+link_libraries(replxx)
+
 add_compile_options(
     -W
     -Wall
@@ -36,6 +39,8 @@ add_executable(kish
     builtins.h
     executor.cpp
     executor.h
+    highlight.cpp
+    highlight.h
     builtins/true.cpp
     builtins/true.h
     builtins/false.cpp

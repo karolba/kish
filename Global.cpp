@@ -30,6 +30,11 @@ std::optional<std::string> Global::get_variable(const std::string &name)
         return { all_args };
     }
 
+    // TODO: write a test for this
+    if(name == "#") {
+        return std::to_string(g.argv.size() - 1);
+    }
+
     auto search = g.variables.find(name);
     if(search != g.variables.end()) {
         return { search->second };
