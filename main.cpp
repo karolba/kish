@@ -3,11 +3,10 @@
 #include <iostream>
 #include <unistd.h>
 #include <fstream>
-#include "Tokenizer.h"
 #include "Global.h"
-#include "Parser.h"
 #include "replxx.hxx"
 #include "executor.h"
+#include "highlight.h"
 
 using replxx::Replxx;
 
@@ -35,38 +34,6 @@ static std::optional<std::string> get_history_path() {
     return {};
 }
 
-static void highlighter_callback(std::string const& input, Replxx::colors_t& colors) {
-    std::vector<Token> tokens = Tokenizer(input).tokenize();
-    CommandList parsed;
-    try {
-        parsed = Parser(tokens).parse();
-    } catch(const Parser::SyntaxError &) {
-        // syntax error - make everything red
-        int i = 0;
-        for(char c : input) {
-            // utf-8 multi-byte character - front part
-            if(c & 0b1000'0000 && !(c & 0b0100'0000)) {
-                continue; // TODO: test this
-            }
-
-            colors[i++] = Replxx::Color::BRIGHTRED;
-        }
-
-        return;
-    }
-
-    int i = 0;
-    for(char c : input) {
-        // utf-8 multi-byte character - front part
-        if(c & 0b1000'0000 && !(c & 0b0100'0000)) {
-            continue; // TODO: test this
-        }
-
-        colors[i++] = Replxx::Color::BRIGHTGREEN;
-    }
-
-}
-
 static std::string read_line(Replxx *replxx) {
     char const * cinput { nullptr }; // should not be freed
 
@@ -89,7 +56,7 @@ static void run_repl() {
     replxx->install_window_change_handler();
     replxx->clear_screen();
     replxx->set_no_color(false);
-    replxx->set_highlighter_callback(highlighter_callback);
+    replxx->set_highlighter_callback(highlight::highlighter_callback);
     replxx->set_beep_on_ambiguous_completion(true);
 
     if(history_path.has_value()) {
@@ -121,6 +88,9 @@ static void usage(const char *ownName) {
 }
 
 int main(int argc, char *argv[]) {
+    // The replxx library uses C stdio - do this to not get confused
+    std::ios::sync_with_stdio();
+
     initialize_variables();
 
     if(argc == 1) {

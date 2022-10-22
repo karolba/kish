@@ -39,6 +39,8 @@ add_executable(kish
     builtins.h
     executor.cpp
     executor.h
+    highlight.cpp
+    highlight.h
     builtins/true.cpp
     builtins/true.h
     builtins/false.cpp
