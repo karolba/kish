@@ -21,10 +21,11 @@
   - current pid - `$$`
 - inline environment variables (`HOME='/' command`)
 - `$()` command substitution
+- basic interactive syntax highlighting
 
 ## Building
 
-The `kish` shell depends on [tcbrindle/span](https://github.com/tcbrindle/span). It can be pulled from a git submodule:
+The `kish` shell depends on [tcbrindle/span](https://github.com/tcbrindle/span) and [AmokHuginnsson/replxx](https://github.com/AmokHuginnsson/replxx). Those dependencies can be pulled from git submodules:
 
 ```sh
 $ git submodule update --init
