@@ -1,3 +1,6 @@
 [submodule "tcbrindle-span"]
 	path = tcbrindle-span
 	url = https://github.com/tcbrindle/span.git
+[submodule "replxx"]
+	path = replxx
+	url = https://github.com/AmokHuginnsson/replxx
