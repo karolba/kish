@@ -11,5 +11,10 @@ struct Token {
 
     Type type;
     std::string value;
-    int position;
+
+    // For now only used for syntax highlighting:
+    int positionStart;
+    int positionEnd;
+    int positionStartUtf8Codepoint;
+    int positionEndUtf8Codepoint;
 };

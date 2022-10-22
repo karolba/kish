@@ -98,6 +98,11 @@ struct Command {
     // File descriptors to close in the main shell process after forking
     std::deque<int> pipe_file_descriptors;
 
+    // For syntax highlighting: keep track where a command starts and ends
+    // those pointers will only live as long as the tcb::span<const Token> input lives
+    const Token *start_token = nullptr;
+    const Token *end_token = nullptr;
+
     std::variant<Empty, Simple, BraceGroup, If, While, Until, For, FunctionDefinition> value;
 };
 

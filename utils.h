@@ -82,4 +82,20 @@ private:
     std::stringstream m_stream;
 };
 
+
+inline bool front_of_multibyte_utf8_codepoint(char c) {
+    return (c & 0b1000'0000 && !(c & 0b0100'0000));
+}
+
+inline int utf8_codepoint_len(std::string_view s, int end) {
+    int len = 0;
+    for(int i = 0; i < end; i++) {
+        if(front_of_multibyte_utf8_codepoint(s[i])) {
+            continue;
+        }
+        len += 1;
+    }
+    return len;
+}
+
 } // namespace util

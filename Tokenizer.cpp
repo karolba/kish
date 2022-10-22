@@ -5,6 +5,7 @@
 
 #include "Tokenizer.h"
 #include "Token.h"
+#include "utils.h"
 
 static bool can_start_operator(char c) {
     return strchr("&<>;|()\n", c) != nullptr;
@@ -23,11 +24,29 @@ static bool can_extend_operator(char c1, char c2) {
         (c1 == '(' && c2 == ')');
 }
 
-static void delimit(std::vector<Token> &output, std::string &current_token, Token::Type token_type) {
+
+void Tokenizer::delimit(std::vector<Token> &output, std::string &current_token, Token::Type token_type, int position) {
     if (current_token.length() == 0) {
         return;
     }
-    output.push_back(Token { token_type, current_token });
+    int start = position - current_token.size();
+    int end = position;
+
+    // TODO: this could propably be quicker than computing the whole utf-8 length every time
+    int untilTokenCodepointLen = utils::utf8_codepoint_len(input, start);
+    int tokenCodepointLen = utils::utf8_codepoint_len(current_token.c_str(), current_token.size());
+
+    int utf8CodepointStart = untilTokenCodepointLen;
+    int utf8CodepointEnd = untilTokenCodepointLen + tokenCodepointLen;
+
+    output.push_back(Token {
+                         token_type,
+                         current_token,
+                         start,
+                         end,
+                         utf8CodepointStart,
+                         utf8CodepointEnd
+                     });
     current_token.clear();
 }
 
@@ -55,7 +74,7 @@ std::vector<Token> Tokenizer::tokenize(const Tokenizer::Options &opt) {
         // 2.3.3
         if (in_operator && !can_extend_operator(input[input_i - 1], ch)) {
             if(opt.delimit)
-                delimit(output, current_token, Token::Type::OPERATOR);
+                delimit(output, current_token, Token::Type::OPERATOR, input_i);
 
             in_operator = false;
             // intentially no contiune
@@ -66,8 +85,7 @@ std::vector<Token> Tokenizer::tokenize(const Tokenizer::Options &opt) {
             current_token.push_back(ch);
 
             if (input_i + 1 == input.length()) {
-                fprintf(stderr, "Syntax error: Nothing after a backslash\n");
-                exit(1);
+                throw SyntaxError{"Tokenizer error: Nothing after a backslash"};
             }
             // TODO: newline joining and continue if can get more input
             input_i += 1;
@@ -157,7 +175,7 @@ std::vector<Token> Tokenizer::tokenize(const Tokenizer::Options &opt) {
         if(!quoted_double && !quoted_single && opt.until.has_value() && ch == opt.until.value()) {
             if(openParensCount == 0) {
                 if(opt.delimit)
-                    delimit(output, current_token, Token::Type::WORD);
+                    delimit(output, current_token, Token::Type::WORD, input_i);
 
                 return output;
             }
@@ -170,7 +188,7 @@ std::vector<Token> Tokenizer::tokenize(const Tokenizer::Options &opt) {
         // 2.3.6
         if (!quoted_single && !quoted_double && can_start_operator(ch)) {
             if(opt.delimit)
-                delimit(output, current_token, Token::Type::WORD);
+                delimit(output, current_token, Token::Type::WORD, input_i);
             in_operator = true;
             current_token.push_back(ch);
             continue;
@@ -179,7 +197,7 @@ std::vector<Token> Tokenizer::tokenize(const Tokenizer::Options &opt) {
         // 2.3.7
         if (strchr(" \t\r", ch) != nullptr) {
             if(opt.delimit)
-                delimit(output, current_token, Token::Type::WORD);
+                delimit(output, current_token, Token::Type::WORD, input_i);
             continue;
         }
 
@@ -206,16 +224,15 @@ std::vector<Token> Tokenizer::tokenize(const Tokenizer::Options &opt) {
     // 2.3.1
     if(opt.delimit) {
         if (in_operator) {
-            delimit(output, current_token, Token::Type::OPERATOR);
+            delimit(output, current_token, Token::Type::OPERATOR, input_i);
         } else {
-            delimit(output, current_token, Token::Type::WORD);
+            delimit(output, current_token, Token::Type::WORD, input_i);
         }
     }
 
     if(opt.until.has_value()) {
         // TODO: this should ask for more input
-        fprintf(stderr, "Tokenizer error: no end of \"$(\"/\"${\"\n");
-        exit(1);
+        throw SyntaxError{"Tokenizer error: no end of \"$(\"/\"${\""};
     }
 
     return output;
