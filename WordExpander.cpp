@@ -71,9 +71,9 @@ bool WordExpander::expand_into(std::vector<std::string> &buf)
             i = expand_variable_free(i + 1);
         } else if(state == DOUBLE_QUOTED && ch == '$' && can_start_variable_name(next_ch.value_or('\0'))) {
             i = expand_variable_double_quoted(i + 1); // TODO: add a test that fails if this does expand_variable_free
-        } else if(state == FREE && ch == '$' && next_ch.value_or('\0') == '(') {
+        } else if(opt.unsafeExpansions && state == FREE && ch == '$' && next_ch.value_or('\0') == '(') {
             i = expand_command_substitution_free(i + 2);
-        } else if(state == DOUBLE_QUOTED && ch == '$' && next_ch.value_or('\0') == '(') {
+        } else if(opt.unsafeExpansions && state == DOUBLE_QUOTED && ch == '$' && next_ch.value_or('\0') == '(') {
             i = expand_command_substitution_double_quoted(i + 2);
         } else if(state == FREE && ch == '~' && (!prev_ch.has_value() || prev_ch.value() == ':')) {
             i = expand_tilda(i + 1);

@@ -11,7 +11,12 @@ public:
     struct Options {
         // Do tilde expansion, parameter expansion, command substitution, and arithmetic expansion
         // Being able to disable this is useful in `cat << "EOF"` where we only want quote removal
+        // TODO: not yet implemented
         bool commonExpansions = false;
+
+        // Whether to do expansions that would execute subcommands ($(), ``)
+        // used to safely expand words when doing syntax highlighting
+        bool unsafeExpansions = true;
 
         // Should "$@" expand to multiple fields or behave like "$*" with IFS=' '
         // (used for variable assignments, where (with IFS=' ') `var="$*"` === `var="$@"`)

@@ -1,8 +1,14 @@
 #include "highlight.h"
 
+#include <algorithm>
 #include <string>
+#include <string_view>
+#include <filesystem>
 #include "Parser.h"
 #include "Tokenizer.h"
+#include "WordExpander.h"
+#include "Global.h"
+#include "builtins.h"
 #include "utils.h"
 #include "replxx.hxx"
 
@@ -12,11 +18,61 @@ using replxx::Replxx;
 
 static void highlight_commandlist(Replxx::colors_t &colors, const CommandList &cl);
 
+static bool command_exists(const std::string &command_name) {
+    if(g.functions.contains(command_name))
+        return true;
+
+    if(find_builtin(command_name).has_value())
+        return true;
+
+    std::optional<std::string> path = g.get_variable("PATH");
+    if(path.has_value()) {
+        auto exists = utils::Splitter(path.value()).delim(':').for_each<bool>([&] (const std::string &dir) -> std::optional<bool> {
+            if(std::filesystem::exists(dir + "/" + command_name)) {
+                return { true };
+            }
+            return {};
+        });
+        if(exists.value_or(false)) {
+            return true;
+        }
+    }
+
+    return false;
+}
+
 static void highlight_command_simple(Replxx::colors_t &colors, const Command &command) {
-    //const Command::Simple &simple_command = std::get<Command::Simple>(command.value);
+    const Command::Simple &simple_command = std::get<Command::Simple>(command.value);
 
     for(int i = command.start_token->positionStartUtf8Codepoint; i < command.end_token->positionEndUtf8Codepoint; i++) {
         colors[i] = Replxx::Color::DEFAULT;
+    }
+
+    if(! simple_command.argv_tokens.empty()) {
+        const Token *argv0 = simple_command.argv_tokens.at(0);
+
+        std::string expandedArgv0;
+
+        WordExpander::Options opt;
+        opt.fieldSplitting = false;
+        opt.pathnameExpansion = WordExpander::Options::NEVER;
+        opt.variableAtAsMultipleFields = false;
+        opt.unsafeExpansions = false;
+        if(! WordExpander(opt, argv0->value).expand_into(expandedArgv0)) {
+            // if word expansion didn't succeed here - just ignore it
+            expandedArgv0 = argv0->value;
+        }
+
+        Replxx::Color colorOfArgv0;
+        if(command_exists(expandedArgv0)) {
+            colorOfArgv0 = Replxx::Color::GREEN;
+        } else {
+            colorOfArgv0 = Replxx::Color::RED;
+        }
+
+        for(int i = argv0->positionStartUtf8Codepoint; i < argv0->positionEndUtf8Codepoint; i++) {
+            colors[i] = colorOfArgv0;
+        }
     }
 }
 

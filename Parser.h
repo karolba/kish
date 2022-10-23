@@ -57,6 +57,9 @@ struct Command {
 
         std::vector<VariableAssignment> variable_assignments; // TODO: this should be a smart pointer
         std::vector<std::string> argv;
+
+        // For syntax highlighting
+        std::vector<const Token*> argv_tokens;
     };
     struct BraceGroup { // `{ true; false; }`
         CommandList command_list;
@@ -147,7 +150,7 @@ private:
     void parse_token(const Token *token);
 
     void commit_assignment(const std::string &assignment);
-    void commit_argument(const std::string &word);
+    void commit_argument(const std::string &word, const Token *token_for_highlighting);
     void commit_redirection(const std::string &op);
 
     void read_commit_compound_command_list();

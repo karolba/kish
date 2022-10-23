@@ -34,9 +34,10 @@ void Parser::commit_assignment(const std::string &assignment)
     get_simple_command().variable_assignments.push_back({name, value});
 }
 
-void Parser::commit_argument(const std::string &word)
+void Parser::commit_argument(const std::string &word, const Token *token_for_highlighting)
 {
     get_simple_command().argv.push_back(word);
+    get_simple_command().argv_tokens.push_back(token_for_highlighting);
 }
 
 void Parser::commit_redirection(const std::string &op)
@@ -461,7 +462,7 @@ void Parser::parse_token(const Token *token) {
     /* TODO: `function a { :; }` and `function b() { :; }` forms */
     // Lone arguments to a command
     else if (token->type == Token::Type::WORD) {
-        commit_argument(token->value);
+        commit_argument(token->value, token);
     }
     // Operators:
     else if (token->value == ">" || token->value == "<" || token->value == ">>") {
