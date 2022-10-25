@@ -64,6 +64,8 @@ struct Command {
     struct BraceGroup { // `{ true; false; }`
         CommandList command_list;
     };
+    // TODO: Technically `if` and others are compound commands too,
+    // Command::Compound should be renamed to something like Command::SimpleCompound
     struct If {
         struct Elif {
             CommandList condition;

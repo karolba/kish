@@ -3,7 +3,6 @@
 #include <iostream>
 #include <unistd.h>
 #include <fstream>
-#include <memory>
 #include "Global.h"
 #include "replxx.hxx"
 #include "executor.h"
@@ -36,11 +35,11 @@ static std::optional<std::string> get_history_path() {
     return {};
 }
 
-static std::string read_line(Replxx &replxx) {
+static std::string read_line(Replxx *replxx) {
     char const * cinput { nullptr }; // should not be freed
 
     do {
-        cinput = replxx.input(prompt());
+        cinput = replxx->input(prompt());
     } while(cinput == nullptr && errno == EAGAIN);
 
     if (cinput == nullptr) {
@@ -53,7 +52,7 @@ static std::string read_line(Replxx &replxx) {
 static void run_repl() {
     std::optional<std::string> history_path = get_history_path();
 
-    std::unique_ptr<Replxx> replxx;
+    Replxx *replxx = new Replxx;
 
     replxx->install_window_change_handler();
     replxx->set_no_color(false);
@@ -67,7 +66,7 @@ static void run_repl() {
 
     // repl loop
     while(true) {
-        std::string input = read_line(*replxx);
+        std::string input = read_line(replxx);
 
         if(history_path.has_value()) {
             if(!input.empty()) {
@@ -78,6 +77,8 @@ static void run_repl() {
 
         run_from_string(input);
     }
+
+    delete replxx;
 }
 
 static void usage(const char *ownName) {
