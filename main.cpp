@@ -54,7 +54,7 @@ static void run_repl() {
 
     Replxx *replxx = new Replxx;
 
-    replxx->install_window_change_handler();
+    //replxx->install_window_change_handler();
     replxx->set_no_color(false);
     replxx->set_highlighter_callback(highlight::highlighter_callback);
     replxx->set_beep_on_ambiguous_completion(true);
