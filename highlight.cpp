@@ -3,7 +3,6 @@
 #include <algorithm>
 #include <string>
 #include <string_view>
-#include <filesystem>
 #include "Parser.h"
 #include "Tokenizer.h"
 #include "WordExpander.h"
@@ -11,6 +10,7 @@
 #include "builtins.h"
 #include "utils.h"
 #include "replxx.hxx"
+#include <sys/stat.h>
 
 namespace highlight {
 
@@ -28,7 +28,18 @@ static bool command_exists(const std::string &command_name) {
     std::optional<std::string> path = g.get_variable("PATH");
     if(path.has_value()) {
         auto exists = utils::Splitter(path.value()).delim(':').for_each<bool>([&] (const std::string &dir) -> std::optional<bool> {
-            if(std::filesystem::exists(dir + "/" + command_name)) {
+            std::string command_path = dir + "/" + command_name;
+            struct stat st;
+            if(stat(command_path.c_str(), &st) != 0) {
+                return {};
+            }
+            if(st.st_mode < 0) {
+                return {};
+            }
+            if(! S_ISREG(st.st_mode)) {
+                return {};
+            }
+            if(st.st_mode & (S_IXUSR | S_IXGRP | S_IXOTH)) {
                 return { true };
             }
             return {};
