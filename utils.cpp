@@ -14,18 +14,6 @@ void wait_for_one(pid_t pid) {
             perror("waitpid");
             exit(1);
         }
-
-//        if (WIFEXITED(status)) {
-//            printf("child exited, status=%d\n", WEXITSTATUS(status));
-//        } else if (WIFSIGNALED(status)) {
-//            printf("child killed (signal %d)\n", WTERMSIG(status));
-//        } else if (WIFSTOPPED(status)) {
-//            printf("child stopped (signal %d)\n", WSTOPSIG(status));
-//        } else if (WIFCONTINUED(status)) {
-//            printf("child continued\n");
-//        } else {    /* Non-standard case -- may never happen */
-//            printf("Unexpected status (0x%x)\n", status);
-//        }
     } while(!WIFEXITED(status) && !WIFSIGNALED(status));
 
     if(WIFEXITED(status))

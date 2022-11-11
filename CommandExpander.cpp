@@ -3,8 +3,6 @@
 #include <stdio.h>
 #include <variant>
 
-//#include "nodbg.cpp"
-
 bool CommandExpander::expand()
 {
     if(std::holds_alternative<Command::Simple>(m_command->value)) {
@@ -26,10 +24,6 @@ bool CommandExpander::expand()
             }
 
             assignment.value = expanded;
-
-            // TODO: CommandExpander should not setenv
-            //setenv(assignment.name.c_str(), assignment.value.c_str(), 1);
-            //dbg() << expanded[0] << '\n';
         }
     }
 
@@ -71,13 +65,6 @@ bool CommandExpander::expand()
             }
         }
     }
-
-    //dbgprintf("argv after expansion (not used):\n\t");
-    //for (const auto& word : m_command->argv) {
-    //    dbgprintf("<%s> ", word.characters());
-    //}
-    //dbgprintf("\n");
-    
 
     return true;
 }
