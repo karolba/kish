@@ -34,7 +34,7 @@ void Tokenizer::delimit(std::vector<Token> &output, std::string &current_token, 
 
     // TODO: this could propably be quicker than computing the whole utf-8 length every time
     int untilTokenCodepointLen = utils::utf8_codepoint_len(input, start);
-    int tokenCodepointLen = utils::utf8_codepoint_len(current_token.c_str(), current_token.size());
+    int tokenCodepointLen = utils::utf8_codepoint_len(current_token);
 
     int utf8CodepointStart = untilTokenCodepointLen;
     int utf8CodepointEnd = untilTokenCodepointLen + tokenCodepointLen;

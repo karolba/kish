@@ -98,4 +98,8 @@ inline int utf8_codepoint_len(std::string_view s, int end) {
     return len;
 }
 
+inline int utf8_codepoint_len(std::string_view s) {
+    return utf8_codepoint_len(s, s.size());
+}
+
 } // namespace util

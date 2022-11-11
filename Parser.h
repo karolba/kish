@@ -139,7 +139,7 @@ private:
     void input_put_token_back();
 
     Command::Simple &get_simple_command();
-    Command::BraceGroup &get_compound_command();
+    Command::BraceGroup &get_brace_group();
     Command::If &get_if_command();
     Command::While &get_while_command();
     Command::Until &get_until_command();

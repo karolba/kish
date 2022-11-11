@@ -103,12 +103,12 @@ void Parser::commit_and_or_list(const Token* op)
 
 void Parser::read_commit_compound_command_list()
 {
-    if(!get_compound_command().command_list.empty()) {
+    if(!get_brace_group().command_list.empty()) {
         // TODO: Could this ever happen?
         throw SyntaxError{"Multiple command lists in one command?"};
     }
 
-    read_command_list_into_until(get_compound_command().command_list, {"}"});
+    read_command_list_into_until(get_brace_group().command_list, {"}"});
 }
 
 // This function gets called
@@ -306,7 +306,7 @@ Command::Simple &Parser::get_simple_command()
     return command_get<Command::Simple>();
 }
 
-Command::BraceGroup &Parser::get_compound_command()
+Command::BraceGroup &Parser::get_brace_group()
 {
     if(has_empty_command()) {
         m_command.value = Command::BraceGroup{};

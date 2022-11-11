@@ -18,6 +18,7 @@
 #include <variant>
 #include "utils.h"
 
+namespace executor {
 
 static void run_command_list(const CommandList &cl);
 
@@ -675,6 +676,13 @@ static void run_nonempty_simple_command_expand_in_main_process(Command expanded)
 static void run_simple_command_expand_in_main_process(const Command &cmd) {
     const Command::Simple &simple_command = std::get<Command::Simple>(cmd.value);
 
+    // TODO:
+
+    // this should discriminate on how many EXPANDED argv words there are
+    // all shells seem to behave this way:
+    //     a=1 $empty; echo $a  -->  "1"
+    //     a=1 $nonempty; echo $a  -->  ""
+
     if(simple_command.argv.size() == 0)
         run_empty_simple_command_expand_in_main_process(cmd);
     else
@@ -1003,3 +1011,5 @@ void subshell_capture_output(const std::vector<Token> &tokens, std::string &out)
 
     utils::wait_for_one(pid);
 }
+
+} // namespace executor
