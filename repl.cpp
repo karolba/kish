@@ -14,6 +14,9 @@ using replxx::Replxx;
 
 namespace repl {
 
+const int MAX_HISTORY_DISPLAY_HINTS = 4;
+const int HISTORY_LOAD_LIMIT_FOR_HINTS = 1000;
+
 static std::string prompt() {
     char *wd = getwd(NULL);
     if(wd == nullptr) {
@@ -57,24 +60,38 @@ static std::vector<Replxx::Completion> completion_callback(std::string const &in
     return completions;
 }
 
-static std::optional<std::string> history_command_starting_with(std::string_view str, Replxx::HistoryScan scan) {
-    int limit = 1000;
-    while(scan.next()) {
-        if(limit-- == 0)
-            return {};
+static std::vector<std::string> history_commands_starting_with(std::string_view str, std::size_t how_many, Replxx::HistoryScan scan) {
+    std::vector<std::string> history_commands;
 
+    int history_read_limit = HISTORY_LOAD_LIMIT_FOR_HINTS;
+    while(scan.next()) {
         if(scan.get().text().starts_with(str)) {
-            return { scan.get().text() };
+            history_commands.emplace_back(scan.get().text());
         }
+
+        if(history_read_limit-- == 0)
+            break;
+
+        if(history_commands.size() >= how_many)
+            break;
     }
 
+    return history_commands;
+}
+
+static std::optional<std::string> history_command_starting_with(std::string_view str, Replxx::HistoryScan scan) {
+    std::vector<std::string> history_commands = history_commands_starting_with(str, 1, std::move(scan));
+    if(! history_commands.empty())
+        return history_commands.at(0);
     return {};
 }
 
+
 static std::vector<std::string> hint_callback(Replxx &replxx, std::string const &input, int &contextLen, Replxx::Color &) {
-    if(auto command = history_command_starting_with(input, replxx.history_scan())) {
+    std::vector<std::string> history_commands = history_commands_starting_with(input, MAX_HISTORY_DISPLAY_HINTS, replxx.history_scan());
+    if(! history_commands.empty()) {
         contextLen = utils::utf8_codepoint_len(input);
-        return { *command };
+        return history_commands;
     }
 
     return {};
@@ -123,16 +140,21 @@ void run() {
     Replxx replxx;
 
     replxx.install_window_change_handler();
+
     replxx.set_no_color(false);
+
     replxx.set_highlighter_callback(highlight::highlighter_callback);
+
     replxx.set_completion_callback(completion_callback);
-    replxx.set_hint_callback(std::bind_front(hint_callback, std::ref(replxx)));
-    replxx.set_beep_on_ambiguous_completion(true);
     replxx.set_immediate_completion(true);
+    replxx.set_beep_on_ambiguous_completion(true);
+
+    replxx.set_max_hint_rows(MAX_HISTORY_DISPLAY_HINTS);
+    replxx.set_hint_callback(std::bind_front(hint_callback, std::ref(replxx)));
     replxx.bind_key(Replxx::KEY::RIGHT, std::bind_front(right_arrow_key_press, std::ref(replxx)));
 
     // TODO: does this improve typing latency?
-    replxx.set_hint_delay(1);
+    //replxx.set_hint_delay(1);
 
     repl_loop(replxx);
 }
