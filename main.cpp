@@ -11,6 +11,26 @@ static void initialize_variables() {
     g.variables["$"] = std::to_string(getpid());
 }
 
+static void load_kishrc() {
+    std::string home;
+
+    if(const char *c_home = getenv("HOME")) {
+        home = c_home;
+    } else {
+        return;
+    }
+
+    // TODO: make this efficiant
+    // TODO: don't save the whole file at all
+    std::string lines;
+    std::ifstream f(home + "/.kishrc");
+    std::string line;
+    while(std::getline(f, line)) {
+        lines.append(line);
+        lines.append("\n");
+    }
+    executor::run_from_string(lines);
+}
 
 static void usage(const char *ownName) {
     std::cerr << "Usage: " << ownName << "\n"
@@ -25,6 +45,7 @@ int main(int argc, char *argv[]) {
     initialize_variables();
 
     if(argc == 1) {
+        load_kishrc();
         repl::run();
     } else if(argc == 2 && argv[1][0] != '-') {
         // TODO: make this efficiant
