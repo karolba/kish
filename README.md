@@ -1,5 +1,8 @@
 # `kish` - a simple shell, aspiring to be fully POSIX-compatibile in the future
 
+![syntax highlighting](./.screenshots/syntax-highlighting.png)
+![history completion](./.screenshots/history-completions.png)
+
 ## What currently works:
 - simple commands
 - quoting
@@ -23,6 +26,9 @@
 - inline environment variables (`HOME='/' command`)
 - `$()` command substitution
 - basic interactive syntax highlighting
+- history saved in `~/.kish_history`
+- interactive history lookup ala fish (but with up to 4 simultaneous search results)
+- loading `~/.kishrc`
 
 ## Building
 
