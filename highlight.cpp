@@ -42,8 +42,7 @@ static bool command_exists(const std::string &command_name) {
     if(find_builtin(command_name).has_value())
         return true;
 
-    std::optional<std::string> path = g.get_variable("PATH");
-    if(path.has_value()) {
+    if(std::optional<std::string> path = g.get_variable("PATH")) {
         auto exists = utils::Splitter(path.value()).delim(':').for_each<bool>([&] (const std::string &dir) -> std::optional<bool> {
             std::string command_path = (dir.empty() ? std::string{"."} : dir) + "/" + command_name;
             struct stat st;

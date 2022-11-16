@@ -27,8 +27,7 @@ static std::string prompt() {
 }
 
 static std::optional<std::string> get_history_path() {
-    auto home = g.get_variable("HOME");
-    if(home.has_value()) {
+    if(std::optional<std::string> home = g.get_variable("HOME")) {
         std::string path = home.value() + "/.kish_history";
         return { path };
     }

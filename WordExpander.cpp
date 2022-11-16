@@ -184,8 +184,6 @@ void WordExpander::delimit_by_non_whitespace()
     out->emplace_back();
 }
 
-
-
 void WordExpander::do_pathname_expansion_on_last_word()
 {
     if(!pathname_expansion_pattern_location_on_last_word.empty()) {
@@ -297,8 +295,7 @@ void WordExpander::expand_special_variable_free(char varname)
         varname = '*';
     }
 
-    std::optional<std::string> var_value = g.get_variable(std::string(1, varname));
-    if(var_value.has_value()) {
+    if(std::optional<std::string> var_value = g.get_variable(std::string(1, varname))) {
         for(char ch : var_value.value()) {
             add_character_unquoted(ch);
         }
@@ -317,8 +314,7 @@ void WordExpander::expand_special_variable_double_quoted(char varname)
     } else {
         // "$*", "$1", "$!", ...
 
-        std::optional<std::string> var_value = g.get_variable(std::string(1, varname));
-        if(var_value.has_value()) {
+        if(std::optional<std::string> var_value = g.get_variable(std::string(1, varname))) {
             out->back().append(var_value.value());
         }
     }
@@ -333,9 +329,7 @@ size_t WordExpander::expand_variable_free(size_t variable_name_begin)
 
     std::string variable_name = std::string(input.substr(variable_name_begin, variable_name_end - variable_name_begin));
 
-    std::optional<std::string> variable_value = g.get_variable(variable_name);
-
-    if(variable_value.has_value()) {
+    if(std::optional<std::string> variable_value = g.get_variable(variable_name)) {
         for(char ch : variable_value.value()) {
             add_character_unquoted(ch);
         }
@@ -353,9 +347,7 @@ size_t WordExpander::expand_variable_double_quoted(size_t variable_name_begin)
 
     std::string variable_name = std::string(input.substr(variable_name_begin, variable_name_end - variable_name_begin));
 
-    std::optional<std::string> variable_value = g.get_variable(variable_name);
-
-    if(variable_value.has_value()) {
+    if(std::optional<std::string> variable_value = g.get_variable(variable_name)) {
         out->back().append(variable_value.value());
     }
 
