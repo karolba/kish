@@ -9,8 +9,7 @@
 #include <pwd.h>
 #include <errno.h>
 #include "utils.h"
-
-#include <iostream>
+#include <glob.h>
 
 
 static bool is_one_letter_variable_name(char ch) {
@@ -86,7 +85,7 @@ bool WordExpander::expand_into(std::vector<std::string> &buf)
         }
     }
 
-    do_pathname_expansion();
+    do_pathname_expansion_on_last_word();
 
     // Note that word expansion might result in multiple words - out->back() being empty
     // does not necessarily mean the expansion did not expand to anything
@@ -160,7 +159,7 @@ void WordExpander::add_character_quoted(char ch)
 void WordExpander::mark_pathname_expansion_character_location()
 {
     size_t current_location = out->back().size() - 1;
-    pathname_expansion_pattern_location.push_back(current_location);
+    pathname_expansion_pattern_location_on_last_word.push_back(current_location);
 }
 
 void WordExpander::delimit_by_whitespace()
@@ -180,20 +179,33 @@ void WordExpander::delimit_by_non_whitespace()
 {
     // Delimiting by non-whitespace (with $IFS) should result in empty fields in case of repeated delimeters
     // For example, "a::b" -> {"a", "", "b"}
-    do_pathname_expansion();
+    do_pathname_expansion_on_last_word();
 
     out->emplace_back();
 }
 
-void WordExpander::do_pathname_expansion()
+
+
+void WordExpander::do_pathname_expansion_on_last_word()
 {
-    if(!pathname_expansion_pattern_location.empty()) {
-//        std::cerr << "Word with pathname expansion: [" << out->back() << "]\n";
-    } else {
-//        std::cerr << "Word without pathname expansion: [" << out->back() << "]\n";
+    if(!pathname_expansion_pattern_location_on_last_word.empty()) {
+        glob_t globbuf;
+        // TODO: implement glob() ourselves - don't rely on the os-provided one
+        // there could be incompatibilities in how it's implemented
+
+        // TODO: implement nullglob (don't check if gl_pathc != 0 if it's on)
+        if(glob(out->back().c_str(), 0, nullptr, &globbuf) == 0 && globbuf.gl_pathc != 0) {
+            // have at least one match - replace expanded text with matches
+            out->pop_back();
+
+            for(std::size_t i = 0; i < globbuf.gl_pathc; i++) {
+                out->emplace_back(globbuf.gl_pathv[i]);
+            }
+        }
+
     }
 
-    pathname_expansion_pattern_location.clear();
+    pathname_expansion_pattern_location_on_last_word.clear();
 }
 
 size_t WordExpander::expand_tilda(size_t username_begin)

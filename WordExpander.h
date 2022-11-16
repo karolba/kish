@@ -48,7 +48,7 @@ private:
     Options opt;
     std::string_view input;
     std::vector<std::string> *out;
-    std::vector<size_t> pathname_expansion_pattern_location;
+    std::vector<size_t> pathname_expansion_pattern_location_on_last_word;
 
     void add_character_literal(char ch);
     void add_character_unquoted(char ch);
@@ -59,7 +59,7 @@ private:
     void delimit_by_whitespace();
     void delimit_by_non_whitespace();
 
-    void do_pathname_expansion();
+    void do_pathname_expansion_on_last_word();
 
     size_t expand_tilda(size_t input_position);
     size_t expand_command_substitution_free(size_t input_position);
