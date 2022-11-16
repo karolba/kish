@@ -267,5 +267,11 @@ ktest 'printf "[%s]\\n" "1" "" "2"' $'[1]\n[]\n[2]'
 ktest "echo '' '' '' 1" '   1'
 ktest "echo 1 '' '' 2 2" '1   2 2'
 ktest "printf %s, '' '' 2 2" ',,2,2,'
+ktest 'f() { echo function-invocation; }; f' 'function-invocation'
+ktest 'f() { echo complex function invocation in a pipe; }; echo $(f | cat) | cat' 'complex function invocation in a pipe'
+ktest 'echo $(f(){ echo in command subst; }; f)' 'in command subst'
+ktest 'echo $(f(){ echo in command subst; }; f > /dev/null | f)' 'in command subst'
+ktest 'f() { echo 1; }; f () { echo 2; } | f(){ echo 3; }; f' 1
+ktest 'f() { echo [$#]; }; f 1 2; echo $(f 1 2 3)' $'[2]\n[3]'
 
 [ $failed -eq 0 ]

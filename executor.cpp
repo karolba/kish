@@ -943,6 +943,10 @@ void run_from_string(const std::string &str) {
         return;
     }
 
+//    for(const Token &token : tokens) {
+//        std::cerr << "[" << token.value << "]" << (token.type == Token::Type::OPERATOR ? " (op)\n" : "\n");
+//    }
+
     CommandList parsed;
 
     try {

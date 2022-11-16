@@ -65,6 +65,26 @@ std::vector<Token> Tokenizer::tokenize(const Tokenizer::Options &opt) {
     for(; input_i < input.length(); input_i++) {
         char ch = input[input_i];
 
+        // recursive tokenizing - count '(' in $( (cmd1); (cmd2;(cmd3)) )
+        if(!quoted_double && !quoted_single && opt.countToUntil.has_value() && ch == opt.countToUntil.value()) {
+            openParensCount += 1;
+            // intentionally no continue - the token should end up in the output
+        }
+
+        // recursive tokenizing - count ')' in $( (cmd1); (cmd2;(cmd3)) )
+        if(!quoted_double && !quoted_single && opt.until.has_value() && ch == opt.until.value()) {
+            if(openParensCount == 0) {
+                if(opt.delimit)
+                    delimit(output, current_token, Token::Type::WORD, input_i);
+
+                return output;
+            }
+
+            openParensCount -= 1;
+            // intentionally no continue - the token should end up in the output
+        }
+
+
         // IEEE Std 1003.1-2017 Shell Command Language 2.3.2
         if (in_operator && !quoted_single && !quoted_double && can_extend_operator(input[input_i - 1], ch)) {
             current_token.push_back(ch);
@@ -163,25 +183,6 @@ std::vector<Token> Tokenizer::tokenize(const Tokenizer::Options &opt) {
             quoted_double = false;
             current_token.push_back(ch);
             continue;
-        }
-
-        // recursive tokenizing - count '(' in $( (cmd1); (cmd2;(cmd3)) )
-        if(!quoted_double && !quoted_single && opt.countToUntil.has_value() && ch == opt.countToUntil.value()) {
-            openParensCount += 1;
-            // intentionally no continue - the token should end up in the output
-        }
-
-        // recursive tokenizing - count ')' in $( (cmd1); (cmd2;(cmd3)) )
-        if(!quoted_double && !quoted_single && opt.until.has_value() && ch == opt.until.value()) {
-            if(openParensCount == 0) {
-                if(opt.delimit)
-                    delimit(output, current_token, Token::Type::WORD, input_i);
-
-                return output;
-            }
-
-            openParensCount -= 1;
-            // intentionally no continue - the token should end up in the output
         }
 
 
