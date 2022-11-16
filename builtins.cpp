@@ -6,6 +6,7 @@
 #include "builtins/cd.h"
 #include "builtins/colon.h"
 #include "builtins/read.h"
+#include "builtins/source.h"
 
 #include <map>
 #include <unordered_map>
@@ -18,6 +19,7 @@ std::optional<BuiltinHandler> find_builtin(const std::string &name) {
         {"help", builtin_help},
         {":", builtin_colon},
         {"read", builtin_read},
+        {"source", builtin_source},
     };
 
     auto foundBuiltin = builtins.find(name);

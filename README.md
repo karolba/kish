@@ -11,6 +11,7 @@
   - `true`
   - `false`
   - `cd` (without `-P` and `-L`)
+  - `source`
 - if statements: `if <command-list>; then <command-list>; [else <command-list>]; fi`
 - `while` and `until` loops
 - `for` loops
