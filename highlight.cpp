@@ -1,9 +1,9 @@
 #include "highlight.h"
-#include <iostream>
 
 #include <algorithm>
 #include <string>
 #include <string_view>
+#include <type_traits>
 #include "Parser.h"
 #include "Tokenizer.h"
 #include "WordExpander.h"
@@ -25,6 +25,16 @@ static void highlight_word(Replxx::colors_t &colors, const Token *token) {
     }
 }
 
+// check if a potentially signed or unsigned numeric value is less than zero
+// without compiler warnings if the number is indeed signed
+//
+// used for checking if stat.st_mode is not negative
+template <typename T, typename std::enable_if<std::is_unsigned<T>::value, bool>::type = true>
+static bool is_negative(T) { return false; }
+
+template <typename T, typename std::enable_if<std::is_signed<T>::value, bool>::type = true>
+static bool is_negative(T number) { return number < 0; }
+
 static bool command_exists(const std::string &command_name) {
     if(g.functions.contains(command_name))
         return true;
@@ -40,7 +50,7 @@ static bool command_exists(const std::string &command_name) {
             if(stat(command_path.c_str(), &st) != 0) {
                 return {};
             }
-            if(st.st_mode < 0) {
+            if(is_negative(st.st_mode)) {
                 return {};
             }
             if(! S_ISREG(st.st_mode)) {

@@ -2,13 +2,13 @@
 #include <unistd.h>
 #include <fstream>
 #include <utility>
+#include <numeric>
+#include <filesystem>
 #include "executor.h"
 #include "Global.h"
 #include "highlight.h"
 #include "utils.h"
 #include "replxx.hxx"
-
-#include <iostream>
 
 using replxx::Replxx;
 
@@ -18,13 +18,12 @@ const int MAX_HISTORY_DISPLAY_HINTS = 4;
 const int HISTORY_LOAD_LIMIT_FOR_HINTS = 1000;
 
 static std::string prompt() {
-    char *wd = getwd(NULL);
-    if(wd == nullptr) {
+    std::error_code ec;
+    std::filesystem::path path = std::filesystem::current_path(ec);
+    if(ec) {
         return " $ ";
     }
-    std::string prompt = std::string(wd) + " $ ";
-    free(wd);
-    return prompt;
+    return path.string() + " $ ";
 }
 
 static std::optional<std::string> get_history_path() {

@@ -228,7 +228,7 @@ void Parser::read_commit_for() {
 void Parser::read_commit_function_definition()
 {
     std::string function_name = get_simple_command().argv.at(0);
-    m_command.value = Command::FunctionDefinition{.name = function_name};
+    m_command.value = Command::FunctionDefinition{.name = function_name, .body = {}};
 
     const Token *after_function_name = input_next_token();
     if(after_function_name == nullptr)

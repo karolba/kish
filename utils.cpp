@@ -4,6 +4,7 @@
 #include "Global.h"
 #include <algorithm>
 #include <cmath>
+#include <cassert>
 
 #include <iostream>
 
