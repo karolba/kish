@@ -25,6 +25,9 @@ struct Redirection {
     int fd { -1 };
     int rewire_fd { -1 };
     std::string path {};
+
+    // nullopt if type == Type::Rewiring
+    std::optional<const Token *> filename_token = std::nullopt;
 };
 
 template <typename T>

@@ -19,6 +19,12 @@ using replxx::Replxx;
 
 static void highlight_commandlist(Replxx::colors_t &colors, const CommandList &cl);
 
+static void highlight_word(Replxx::colors_t &colors, const Token *token) {
+    for(int i = token->positionStartUtf8Codepoint; i < token->positionEndUtf8Codepoint; i++) {
+        colors[i] = Replxx::Color::DEFAULT;
+    }
+}
+
 static bool command_exists(const std::string &command_name) {
     if(g.functions.contains(command_name))
         return true;
@@ -86,6 +92,10 @@ static void highlight_command_simple(Replxx::colors_t &colors, const Command &co
             colors[i] = colorOfArgv0;
         }
     }
+
+    for(std::size_t i = 1; i < simple_command.argv_tokens.size(); i++) {
+        highlight_word(colors, simple_command.argv_tokens.at(i));
+    }
 }
 
 static void highlight_command_bracegroup(Replxx::colors_t &colors, const Command &command) {
@@ -125,9 +135,7 @@ static void highlight_command_for(Replxx::colors_t &colors, const Command &comma
     const Command::For &for_command = std::get<Command::For>(command.value);
 
     for(const Token *item_token : for_command.items_tokens) {
-        for(int i = item_token->positionStartUtf8Codepoint; i < item_token->positionEndUtf8Codepoint; i++) {
-            colors[i] = Replxx::Color::DEFAULT;
-        }
+        highlight_word(colors, item_token);
     }
 
     highlight_commandlist(colors, for_command.body);
@@ -155,6 +163,12 @@ static void highlight_command(Replxx::colors_t &colors, const Command &command) 
           [&] (const Command::For) { highlight_command_for(colors, command); },
           [&] (const Command::FunctionDefinition) { highlight_command_functiondefinition(colors, command); }
     }, command.value);
+
+    for(const Redirection &redir : command.redirections) {
+        if(redir.filename_token.has_value()) {
+            highlight_word(colors, *redir.filename_token);
+        }
+    }
 }
 
 static void highlight_pipeline(Replxx::colors_t &colors, const Pipeline &pipeline) {
@@ -237,7 +251,6 @@ void highlighter_callback(std::string const &input, Replxx::colors_t &colors) {
         highlight_all_red(input, colors);
         return;
     }
-
 
     highlight_commandlist(colors, parsed);
     highlight_everything_by_tokens(input, colors, tokens);

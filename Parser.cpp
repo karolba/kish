@@ -61,7 +61,8 @@ void Parser::commit_redirection(const std::string &op)
         throw SyntaxError{"operator or newline after a redirection operator (expected a word)"};
     }
     
-    m_command.redirections.push_back({type, fd, -1, std::move(next->value)});
+    // note: next->value cannot be std::moved because it could be used again in the highlighter
+    m_command.redirections.push_back({type, fd, -1, next->value, next});
 }
 
 void Parser::commit_command()
