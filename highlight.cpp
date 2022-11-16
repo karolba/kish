@@ -1,4 +1,5 @@
 #include "highlight.h"
+#include <iostream>
 
 #include <algorithm>
 #include <string>
@@ -62,20 +63,20 @@ static void highlight_command_simple(Replxx::colors_t &colors, const Command &co
     if(! simple_command.argv_tokens.empty()) {
         const Token *argv0 = simple_command.argv_tokens.at(0);
 
-        std::string expandedArgv0;
+        std::vector<std::string> expandedArgv;
 
         WordExpander::Options opt;
-        opt.fieldSplitting = false;
+        opt.fieldSplitting = true;
         opt.pathnameExpansion = WordExpander::Options::NEVER;
         opt.variableAtAsMultipleFields = false;
         opt.unsafeExpansions = false;
-        if(! WordExpander(opt, argv0->value).expand_into(expandedArgv0)) {
+        if(! WordExpander(opt, argv0->value).expand_into(expandedArgv) || expandedArgv.empty()) {
             // if word expansion didn't succeed here - just ignore it
-            expandedArgv0 = argv0->value;
+            expandedArgv = { argv0->value };
         }
 
         Replxx::Color colorOfArgv0;
-        if(command_exists(expandedArgv0)) {
+        if(command_exists(expandedArgv.at(0))) {
             colorOfArgv0 = Replxx::Color::GREEN;
         } else {
             colorOfArgv0 = Replxx::Color::RED;
@@ -122,6 +123,12 @@ static void highlight_command_until(Replxx::colors_t &colors, const Command &com
 
 static void highlight_command_for(Replxx::colors_t &colors, const Command &command) {
     const Command::For &for_command = std::get<Command::For>(command.value);
+
+    for(const Token *item_token : for_command.items_tokens) {
+        for(int i = item_token->positionStartUtf8Codepoint; i < item_token->positionEndUtf8Codepoint; i++) {
+            colors[i] = Replxx::Color::DEFAULT;
+        }
+    }
 
     highlight_commandlist(colors, for_command.body);
 }

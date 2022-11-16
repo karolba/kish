@@ -89,6 +89,9 @@ struct Command {
         std::string varname;
         std::vector<std::string> items;
         CommandList body;
+
+        // For syntax highlighting
+        std::vector<const Token*> items_tokens;
     };
     struct FunctionDefinition {
         std::string name;
@@ -159,6 +162,8 @@ private:
     void read_commit_until();
     void read_commit_for();
     void read_commit_function_definition();
+
+    void for_loop_add_item(const Token *token);
 
     const Token *read_command_list_into_until(CommandList& into, const std::vector<std::string_view> &until_command);
 

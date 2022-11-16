@@ -102,4 +102,7 @@ inline int utf8_codepoint_len(std::string_view s) {
     return utf8_codepoint_len(s, s.size());
 }
 
+
+std::string common_prefix(const std::vector<std::string> &strings);
+
 } // namespace util

@@ -2,6 +2,12 @@
 #include <unistd.h>
 #include <sys/wait.h>
 #include "Global.h"
+#include <algorithm>
+#include <cmath>
+
+#include <iostream>
+
+#undef min
 
 namespace utils {
 
@@ -24,6 +30,54 @@ void wait_for_all(const std::vector<int> &pids) {
     for(pid_t pid : pids) {
         wait_for_one(pid);
     }
+}
+
+template<typename T>
+static std::size_t min_size(std::vector<T> v) {
+    std::size_t minimum = std::numeric_limits<std::size_t>::max();
+    for(const T &t : v) {
+        if(t.size() < minimum) {
+            minimum = t.size();
+        }
+    }
+    return minimum;
+}
+
+std::string common_prefix(const std::vector<std::string> &strings)  {
+    assert(!strings.empty());
+
+    std::size_t minimum_size = min_size(strings);
+
+    bool all_strings_equal = true;
+    std::string prefix;
+    for(std::size_t i = 0; i < minimum_size; i++) {
+        // assume characters are similar - if they aren't pop them at the end of the function
+        // simplifies utf-8 handling
+        prefix.push_back(strings.at(0).at(i));
+
+        bool all_characters_equal = true;
+        for(std::size_t string_i = 1; string_i < strings.size(); string_i++) {
+            if(strings.at(0).at(i) != strings.at(string_i).at(i)) {
+                all_characters_equal = false;
+                break;
+            }
+        }
+        if(!all_characters_equal) {
+            all_strings_equal = false;
+            break;
+        }
+    }
+
+    if(!all_strings_equal) {
+        // remove last character erronously put in prefix in the loop
+        prefix.pop_back();
+    }
+    while(!prefix.empty() && front_of_multibyte_utf8_codepoint(*prefix.end())) {
+        // in case of a removed multibyte utf-8 character, get rid of the front part as well
+        prefix.pop_back();
+    }
+
+    return prefix;
 }
 
 } // namespace utils

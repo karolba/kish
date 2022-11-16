@@ -149,6 +149,11 @@ void Parser::read_commit_until() {
     read_command_list_into_until(get_until_command().body, {"done"});
 }
 
+void Parser::for_loop_add_item(const Token *token) {
+    get_for_command().items.emplace_back(token->value);
+    get_for_command().items_tokens.emplace_back(token);
+}
+
 // This function gets called
 //    for [HERE] [in ...]; do ...
 // reads everything until 'done', including the 'done'
@@ -175,13 +180,13 @@ void Parser::read_commit_for() {
         // The `for var in WORD...; do ...` form
 
         while((after_varname = input_next_token())) {
-            if(after_varname->type == Token::Type::OPERATOR && after_varname->value != ";" && after_varname->value != "\n")
-                throw SyntaxError{after_varname};
-
             if(after_varname->type == Token::Type::OPERATOR && (after_varname->value == ";" || after_varname->value == "\n"))
                 break;
 
-            get_for_command().items.emplace_back(after_varname->value);
+            if(after_varname->type == Token::Type::OPERATOR)
+                throw SyntaxError{after_varname};
+
+            for_loop_add_item(after_varname);
         }
 
         if(after_varname == nullptr)
