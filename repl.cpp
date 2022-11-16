@@ -78,16 +78,6 @@ static std::vector<std::string> history_commands_starting_with(std::string_view 
     return history_commands;
 }
 
-# if 0
-static std::optional<std::string> history_command_starting_with(std::string_view str, Replxx::HistoryScan scan) {
-    std::vector<std::string> history_commands = history_commands_starting_with(str, 1, std::move(scan));
-    if(! history_commands.empty())
-        return history_commands.at(0);
-    return {};
-}
-# endif
-
-
 static std::vector<std::string> hint_callback(Replxx &replxx, std::string const &input, int &contextLen, Replxx::Color &) {
     std::vector<std::string> history_commands = history_commands_starting_with(input, MAX_HISTORY_DISPLAY_HINTS, replxx.history_scan());
     if(! history_commands.empty()) {
@@ -109,14 +99,13 @@ static Replxx::ACTION_RESULT right_arrow_key_press(Replxx &replxx, char32_t code
         if(! history_commands.empty()) {
             std::string common_prefix = utils::common_prefix(history_commands);
             if(replxx.get_state().cursor_position() == utils::utf8_codepoint_len(common_prefix)) {
-                // can't complete to the common prefix - complete the topmost pick
+                // already completed or typed be the user to the common prefix - complete to the topmost pick
                 replxx.set_state(Replxx::State(history_commands.at(0).c_str(), std::numeric_limits<int>::max()));
-                return Replxx::ACTION_RESULT::CONTINUE;
             } else {
                 // multiple valid point to complete - only complete to the common prefix
                 replxx.set_state(Replxx::State(common_prefix.c_str(), std::numeric_limits<int>::max()));
-                return Replxx::ACTION_RESULT::CONTINUE;
             }
+            return Replxx::ACTION_RESULT::CONTINUE;
         }
     }
 
