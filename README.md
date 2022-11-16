@@ -1,7 +1,9 @@
 # `kish` - a simple shell, aspiring to be fully POSIX-compatibile in the future
 
-![syntax highlighting](./.screenshots/syntax-highlighting.png)
-![history completion](./.screenshots/history-completions.png)
+| Syntax highlighting                                            | Interactive history                                                       |
+|----------------------------------------------------------------|---------------------------------------------------------------------------|
+| ![syntax highlighting](./.screenshots/syntax-highlighting.png) | ![interactive history completion](./.screenshots/history-completions.png) |
+
 
 ## What currently works:
 - simple commands
