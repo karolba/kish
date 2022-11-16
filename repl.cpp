@@ -55,8 +55,8 @@ static std::vector<Replxx::Completion> completion_callback(std::string const &in
     (void) contextLen;
 
     std::vector<Replxx::Completion> completions;
-    completions.emplace_back(Replxx::Completion("test"));
-    completions.emplace_back(Replxx::Completion("cośtam"));
+    // completions.emplace_back(Replxx::Completion("test"));
+    // completions.emplace_back(Replxx::Completion("cośtam"));
     return completions;
 }
 
