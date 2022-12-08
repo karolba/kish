@@ -7,23 +7,45 @@
 #include "Token.h"
 #include "utils.h"
 
-static bool can_start_operator(char c) {
-    return strchr("&<>;|()\n", c) != nullptr;
+
+static bool can_start_redirection_specified_fd(char c1, char c2) {
+    return strchr("<>", c2) != nullptr && utils::no_locale_isdigit(c1);
 }
 
-static bool can_extend_operator(char c1, char c2) {
+// only one of can_*_operator functions that peeks into the future (the `next` parameter)
+static bool can_start_operator(const std::string &current_token, char current, char next) {
+    return strchr("&<>;|()\n", current) != nullptr ||
+        (current_token.empty() && can_start_redirection_specified_fd(current, next));
+}
+
+static bool can_be_second_char_of_operator(char first, char second) {
     return
-        (c1 == '&' && c2 == '&') ||
-        (c1 == '|' && c2 == '|') ||
-        (c1 == ';' && c2 == ';') ||
-        (c1 == '<' && c2 == '<') ||
-        (c1 == '>' && c2 == '>') ||
-        (c1 == '<' && c2 == '&') ||
-        (c1 == '>' && c2 == '&') ||
-        (c1 == '<' && c2 == '>') ||
-        (c1 == '(' && c2 == ')');
+        (first == '&' && second == '&') ||
+        (first == '|' && second == '|') ||
+        (first == ';' && second == ';') ||
+        (first == '<' && second == '<') ||
+        (first == '>' && second == '>') ||
+        (first == '<' && second == '&') ||
+        (first == '>' && second == '&') ||
+        (first == '<' && second == '>') ||
+        (first == '(' && second == ')') ||
+        can_start_redirection_specified_fd(first, second);
 }
 
+static bool can_be_third_char_of_operator(char first, char second, char third) {
+    return utils::no_locale_isdigit(first) && second == '>' && third == '>';
+}
+
+static bool can_extend_operator(const std::string &current_token, char with) {
+    if(current_token.length() == 1)
+        return can_be_second_char_of_operator(current_token.at(0), with);
+
+    // "2>" could extend into "2>>"
+    if(current_token.length() == 2)
+        return can_be_third_char_of_operator(current_token.at(0), current_token.at(1), with);
+
+    return false;
+}
 
 void Tokenizer::delimit(std::vector<Token> &output, std::string &current_token, Token::Type token_type, int position) {
     if (current_token.length() == 0) {
@@ -64,6 +86,7 @@ std::vector<Token> Tokenizer::tokenize(const Tokenizer::Options &opt) {
 
     for(; input_i < input.length(); input_i++) {
         char ch = input[input_i];
+        char next = input_i + 1 == input.length() - 1 ? '\0' : input[input_i + 1];
 
         // recursive tokenizing - count '(' in $( (cmd1); (cmd2;(cmd3)) )
         if(!quoted_double && !quoted_single && opt.countToUntil.has_value() && ch == opt.countToUntil.value()) {
@@ -86,13 +109,13 @@ std::vector<Token> Tokenizer::tokenize(const Tokenizer::Options &opt) {
 
 
         // IEEE Std 1003.1-2017 Shell Command Language 2.3.2
-        if (in_operator && !quoted_single && !quoted_double && can_extend_operator(input[input_i - 1], ch)) {
+        if (in_operator && !quoted_single && !quoted_double && can_extend_operator(current_token, ch)) {
             current_token.push_back(ch);
             continue;
         }
 
         // 2.3.3
-        if (in_operator && !can_extend_operator(input[input_i - 1], ch)) {
+        if (in_operator && !can_extend_operator(current_token, ch)) {
             if(opt.delimit)
                 delimit(output, current_token, Token::Type::OPERATOR, input_i);
 
@@ -187,7 +210,7 @@ std::vector<Token> Tokenizer::tokenize(const Tokenizer::Options &opt) {
 
 
         // 2.3.6
-        if (!quoted_single && !quoted_double && can_start_operator(ch)) {
+        if (!quoted_single && !quoted_double && can_start_operator(current_token, ch, next)) {
             if(opt.delimit)
                 delimit(output, current_token, Token::Type::WORD, input_i);
             in_operator = true;

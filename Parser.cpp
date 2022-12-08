@@ -1,5 +1,6 @@
 #include "Parser.h"
 #include "Token.h"
+#include "utils.h"
 #include <stdio.h>
 #include <unistd.h>
 #include <ctype.h>
@@ -44,13 +45,17 @@ void Parser::commit_redirection(const std::string &op)
 {
     Redirection::Type type = Redirection::FileWrite;
     int fd { 1 };
-    if (op == ">") { 
-        type = Redirection::FileWrite;
-    } else if (op == ">>") {
+    if (op.ends_with(">>")) {
         type = Redirection::FileWriteAppend;
-    } else if (op == "<") {
+    } else if (op.ends_with('>')) {
+        type = Redirection::FileWrite;
+    } else if (op.ends_with('<')) {
         type = Redirection::FileRead;
         fd = 0;
+    }
+
+    if(utils::no_locale_isdigit(op.at(0))) {
+        fd = op.at(0) - '0';
     }
 
     const Token *next = input_next_token();
@@ -471,7 +476,7 @@ void Parser::parse_token(const Token *token) {
         commit_argument(token->value, token);
     }
     // Operators:
-    else if (token->value == ">" || token->value == "<" || token->value == ">>") {
+    else if (token->value.ends_with('>') || token->value.ends_with('<')) {
         commit_redirection(token->value);
     }
     else if (token->value == "|") {
