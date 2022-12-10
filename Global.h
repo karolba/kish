@@ -24,6 +24,18 @@ struct Global {
     std::vector<SavedFd> saved_fds;
 };
 
+class TemporaryVariableChange {
+public:
+    TemporaryVariableChange(const std::string &name, const std::string &new_value);
+    ~TemporaryVariableChange();
+
+private:
+    bool was_set;
+    const std::string name;
+    std::string old_value;
+};
+
+
 extern Global g;
 
 //void set_variable(const std::string &name, const std::string &value);

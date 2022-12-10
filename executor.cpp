@@ -571,6 +571,11 @@ static std::optional<pid_t> run_command_expand_in_subprocess(const Command &cmd)
 static void run_builitin_in_main_process(BuiltinHandler &builtin, const Command &expanded_command) {
     const auto &simple_command = std::get<Command::Simple>(expanded_command.value);
 
+    std::vector<TemporaryVariableChange> localVariableChanges;
+    for(const auto &variable_assignment : simple_command.variable_assignments) {
+        localVariableChanges.emplace_back(variable_assignment.name, variable_assignment.value);
+    }
+
     auto old_fds = setup_redirections_save_old_fds(expanded_command.redirections);
     g.last_return_value = builtin(simple_command);
     restore_old_fds(old_fds);
@@ -650,8 +655,6 @@ static void run_nonempty_simple_command_expand_in_main_process(Command expanded)
 
     auto builtin = find_builtin(expanded_simple_command.argv.at(0));
     if(builtin) {
-        /* TODO: inline environment variables should be treated like variables here */
-        /* this will be useful with (IFS=: read -r a b c) */
         run_builitin_in_main_process(builtin.value(), expanded);
     } else if(g.functions.contains(expanded_simple_command.argv.at(0))) {
         /* TODO: inline environment variables should expand to environment variables here */

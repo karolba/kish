@@ -131,6 +131,7 @@ private:
 };
 
 
+
 inline bool front_of_multibyte_utf8_codepoint(char c) {
     return (c & 0b1000'0000 && !(c & 0b0100'0000));
 }

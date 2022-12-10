@@ -52,12 +52,12 @@ int builtin_read(const Command::Simple &cmd)
 
         std::size_t partNumber = 0;
         splitter.delimIFS().for_each([&] (const std::string &part) -> utils::Splitter::ShouldContinue {
-            if(partNumber >= variables.size() - 1)
-                return utils::Splitter::BREAK_LOOP;
-
             g.variables[variables.at(partNumber)] = part;
 
             partNumber += 1;
+            if(partNumber >= variables.size() - 1)
+                return utils::Splitter::BREAK_LOOP;
+
             return utils::Splitter::CONTINUE_LOOP;
         });
         g.variables[variables.at(variables.size() - 1)] = splitter.rest_of_input();

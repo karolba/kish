@@ -46,3 +46,24 @@ std::optional<std::string> Global::get_variable(const std::string &name)
 
     return {};
 }
+
+TemporaryVariableChange::TemporaryVariableChange(const std::string &name, const std::string &new_value)
+    : name(name)
+{
+    auto oldVar = g.variables.find(name);
+    if(oldVar == g.variables.end()) {
+        was_set = false;
+    } else {
+        was_set = true;
+        old_value = oldVar->second;
+    }
+    g.variables[name] = new_value;
+}
+
+TemporaryVariableChange::~TemporaryVariableChange() {
+    if(was_set) {
+        g.variables[name] = old_value;
+    } else {
+        g.variables.erase(name);
+    }
+}

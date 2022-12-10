@@ -86,6 +86,9 @@ std::istream &getline_multiple_delimeters(std::istream &is, std::string &str, st
     std::ios_base::iostate state = std::ios_base::goodbit;
     str.clear();
     std::streamsize extr = 0;
+    bool delimitBySpace = delimiters.find(' ') != delimiters.npos;
+    bool delimitByTab = delimiters.find('\t') != delimiters.npos;
+    bool delimitByNl = delimiters.find('\n') != delimiters.npos;
     while (true)
     {
         int i = is.rdbuf()->sbumpc();
@@ -96,15 +99,17 @@ std::istream &getline_multiple_delimeters(std::istream &is, std::string &str, st
 
         ++extr;
         char ch = i;
-        if(delimiters.find(ch) != std::string::npos)
+        if(delimiters.find(ch) != std::string::npos) {
+            // is.rdbuf()->sputbackc(ch);
             break;
+        }
 
         // Ignore multiple continuous whitespace characters
-        if(ch == ' ' || ch == '\t' || ch == '\n') {
+        if((delimitBySpace && ch == ' ') || (delimitByTab && ch == '\t') || (delimitByNl && ch == '\n')) {
             int nextToEat;
             while(delimiters.find((nextToEat = is.rdbuf()->snextc())) != std::string::npos) {
                 nextToEat = delimiters.at(nextToEat);
-                if(nextToEat == ' ' || nextToEat == '\t' || nextToEat == '\n') {
+                if((delimitBySpace && nextToEat == ' ') || (delimitByTab && nextToEat == '\t') || (delimitByNl && nextToEat == '\n')) {
                     // eat
                     is.rdbuf()->sbumpc();
                 }
