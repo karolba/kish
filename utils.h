@@ -5,6 +5,13 @@
 #include <sys/wait.h>
 #include <functional>
 #include <optional>
+#include <ranges>
+#include <algorithm>
+#include <string_view>
+#include <iostream>
+#include <iomanip>
+#include "Global.h"
+
 
 namespace utils {
 
@@ -37,6 +44,8 @@ template<class... Ts> overloaded(Ts...) -> overloaded<Ts...>; // not needed as o
 void wait_for_one(pid_t pid);
 void wait_for_all(const std::vector<int> &pids);
 
+std::istream &getline_multiple_delimeters(std::istream &in, std::string &out, std::string_view delim);
+
 class Splitter {
 public:
     enum ShouldContinue {
@@ -48,8 +57,8 @@ public:
         : m_stream(str)
     {}
 
-    Splitter& delim(char delim) {
-        m_delim = delim;
+    Splitter &delim(char delim) {
+        m_delim = { delim };
 
         m_stream << m_delim; // std::getline ignores the last section of the split string
                              // make the last section empty to prevent this
@@ -57,10 +66,43 @@ public:
         return *this;
     }
 
+    Splitter &delim(std::string_view delim) {
+        m_delim = delim;
+
+        if(delim.size() > 0) {
+            m_stream << m_delim.at(0); // std::getline ignores the last section of the split string
+                                       // make the last section empty to prevent this
+        }
+
+        return *this;
+    }
+
+    Splitter &delimIFS() {
+        std::string IFS = g.get_variable("IFS").value_or("");
+
+        if(IFS.empty())
+            m_delim = " \t\n";
+        else
+            m_delim = IFS;
+
+        return *this;
+    }
+
+    bool correct_getline(std::string &part) {
+        if(m_delim.size() == 0) {
+            part = m_stream.str();
+            return false;
+        } else if(m_delim.size() == 1 && m_delim.at(0) != ' ' && m_delim.at(0) != '\t' && m_delim.at(0) != '\n') {
+            return !!std::getline(m_stream, part, m_delim.at(0));
+        } else {
+            return !!getline_multiple_delimeters(m_stream, part, m_delim);
+        }
+    }
+
     template<typename T>
     std::optional<T> for_each(std::function<std::optional<T>(const std::string &part)> callback) {
         std::string part;
-        while(std::getline(m_stream, part, m_delim)) {
+        while(correct_getline(part)) {
             std::optional<T> res = callback(part);
             if(res.has_value())
                 return res;
@@ -71,14 +113,20 @@ public:
 
     void for_each(std::function<ShouldContinue(const std::string &part)> callback) {
         std::string part;
-        while(std::getline(m_stream, part, m_delim)) {
+        while(correct_getline(part)) {
             if(callback(part) == BREAK_LOOP)
                 return;
         }
     }
 
+    std::string rest_of_input() {
+        if(m_stream.str().size() <= (std::size_t)m_stream.tellg())
+            return "";
+        return m_stream.str().substr(m_stream.tellg());
+    }
+
 private:
-    char m_delim { '\0' };
+    std::string m_delim { '\0' };
     std::stringstream m_stream;
 };
 

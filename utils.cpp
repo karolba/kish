@@ -81,4 +81,44 @@ std::string common_prefix(const std::vector<std::string> &strings)  {
     return prefix;
 }
 
+// heavily adapted from the libc++ version of getline()
+std::istream &getline_multiple_delimeters(std::istream &is, std::string &str, std::string_view delimiters) {
+    std::ios_base::iostate state = std::ios_base::goodbit;
+    str.clear();
+    std::streamsize extr = 0;
+    while (true)
+    {
+        int i = is.rdbuf()->sbumpc();
+        if(i == std::streambuf::traits_type::eof()) {
+           state |= std::ios_base::eofbit;
+           break;
+        }
+
+        ++extr;
+        char ch = i;
+        if(delimiters.find(ch) != std::string::npos)
+            break;
+
+        // Ignore multiple continuous whitespace characters
+        if(ch == ' ' || ch == '\t' || ch == '\n') {
+            int nextToEat;
+            while(delimiters.find((nextToEat = is.rdbuf()->snextc())) != std::string::npos) {
+                nextToEat = delimiters.at(nextToEat);
+                if(nextToEat == ' ' || nextToEat == '\t' || nextToEat == '\n') {
+                    // eat
+                    is.rdbuf()->sbumpc();
+                }
+            }
+        }
+        str.push_back(ch);
+
+    }
+    if (extr == 0) {
+       state |= std::ios_base::failbit;
+    }
+    is.setstate(state);
+    return is;
+}
+
+
 } // namespace utils
