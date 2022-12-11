@@ -9,8 +9,7 @@
 
 
 static bool can_start_redirection_specified_fd(char c1, char c2) {
-    bool can = utils::strchr_no_null("<>", c2) != nullptr && utils::no_locale_isdigit(c1);
-    return can;
+    return utils::strchr_no_null("<>", c2) != nullptr && utils::no_locale_isdigit(c1);
 }
 
 // only one of can_*_operator functions that peeks into the future (the `next` parameter)

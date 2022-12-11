@@ -6,6 +6,15 @@
 
 Global g;
 
+static std::optional<std::string> get_pwd() {
+    std::error_code ec;
+    std::filesystem::path path = std::filesystem::current_path(ec);
+    if(!ec) {
+        return { path.string() };
+    }
+    return {};
+}
+
 // TODO: return std::optional<std::string_view> ?
 std::optional<std::string> Global::get_variable(const std::string &name)
 {
@@ -37,10 +46,27 @@ std::optional<std::string> Global::get_variable(const std::string &name)
     }
 
     if(name == "PWD") {
-        std::error_code ec;
-        std::filesystem::path path = std::filesystem::current_path(ec);
-        if(!ec) {
-            return { path.string() };
+        if(std::optional<std::string> pwd = get_pwd()) {
+            return { *pwd };
+        }
+    }
+
+    if(name == "PROMPT_PWD") {
+        if(std::optional<std::string> pwd = get_pwd()) {
+            if(char *home_cstr = getenv("HOME")) {
+                std::string_view home(home_cstr);
+
+                // normalize the path - remove last '/' characters
+                while(home.size() > 0 && home.ends_with('/')) {
+                    home.remove_suffix(1);
+                }
+
+                if(pwd->starts_with(home)) {
+                    return { "~" + pwd->substr(home.size()) };
+                } else {
+                    return { *pwd };
+                }
+            }
         }
     }
 
