@@ -68,4 +68,6 @@ private:
     void expand_special_variable_double_quoted(char varname);
     size_t expand_variable_free(size_t variable_name_begin);
     size_t expand_variable_double_quoted(size_t variable_name_begin);
+
+    bool can_expand_to_empty_word;
 };

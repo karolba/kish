@@ -9,12 +9,13 @@
 
 
 static bool can_start_redirection_specified_fd(char c1, char c2) {
-    return strchr("<>", c2) != nullptr && utils::no_locale_isdigit(c1);
+    bool can = utils::strchr_no_null("<>", c2) != nullptr && utils::no_locale_isdigit(c1);
+    return can;
 }
 
 // only one of can_*_operator functions that peeks into the future (the `next` parameter)
 static bool can_start_operator(const std::string &current_token, char current, char next) {
-    return strchr("&<>;|()\n", current) != nullptr ||
+    return utils::strchr_no_null("&<>;|()\n", current) != nullptr ||
         (current_token.empty() && can_start_redirection_specified_fd(current, next));
 }
 
@@ -86,7 +87,7 @@ std::vector<Token> Tokenizer::tokenize(const Tokenizer::Options &opt) {
 
     for(; input_i < input.length(); input_i++) {
         char ch = input[input_i];
-        char next = input_i + 1 == input.length() - 1 ? '\0' : input[input_i + 1];
+        char next = input_i + 1 < input.length() ? input[input_i + 1] : '\0';
 
         // recursive tokenizing - count '(' in $( (cmd1); (cmd2;(cmd3)) )
         if(!quoted_double && !quoted_single && opt.countToUntil.has_value() && ch == opt.countToUntil.value()) {
@@ -219,7 +220,7 @@ std::vector<Token> Tokenizer::tokenize(const Tokenizer::Options &opt) {
         }
 
         // 2.3.7
-        if (strchr(" \t\r", ch) != nullptr) {
+        if (utils::strchr_no_null(" \t\r", ch) != nullptr) {
             if(opt.delimit)
                 delimit(output, current_token, Token::Type::WORD, input_i);
             continue;

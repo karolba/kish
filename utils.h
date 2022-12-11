@@ -15,6 +15,19 @@
 
 namespace utils {
 
+// strchr(3) matches '\0' as always belonging to the string, because
+// "The terminating null character is considered to be part of the string; therefore if c
+//  is ‘\0’, the functions locate the terminating ‘\0’."
+// This function prevents that from happening
+inline char *strchr_no_null(const char *p, char ch) {
+    while(*p) {
+        if (*p == ch)
+            return (char *)p;
+        p++;
+    }
+    return nullptr;
+}
+
 /*
  * Don't use isdigit(3) or isalpha(3) from the standard library, because on glibc these functions
  * needlessly depend on the current locale

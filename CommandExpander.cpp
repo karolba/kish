@@ -44,7 +44,7 @@ bool CommandExpander::expand()
                 fprintf(stderr, "Shell: %s: ambiguous redirect\n", redirection.path.c_str());
                 return false;
             }
-            redirection.path = move(expanded[0]);
+            redirection.path = std::move(expanded[0]);
         }
     }
 

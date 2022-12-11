@@ -28,7 +28,7 @@ bool WordExpander::expand_into(std::vector<std::string> &buf)
 {
     out = &buf;
 
-    bool can_expand_to_empty_word = true;
+    can_expand_to_empty_word = true;
 
     // Assume we can't expand to an empty word (for example, the word contains quotations
     // like ""$var). If the assumption turns out to be incorrect and we did not expand to
@@ -307,9 +307,14 @@ void WordExpander::expand_special_variable_double_quoted(char varname)
     if(varname == '@') {
         // "$@"
         if(g.argv.size() <= 1) {
-            // TODO
+            std::cerr << "EMPTY WORD!" << "\n";
+            can_expand_to_empty_word = true;
         } else {
-            // TODO
+            for(std::size_t i = 1; i < g.argv.size(); i++) {
+                if(i != 1)
+                    out->emplace_back();
+                out->back().append(g.argv.at(i));
+            }
         }
     } else {
         // "$*", "$1", "$!", ...
