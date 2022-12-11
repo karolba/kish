@@ -57,6 +57,8 @@ add_executable(kish
     builtins/read.h
     builtins/source.cpp
     builtins/source.h
+    builtins/echo.cpp
+    builtins/echo.h
 
     test/tests.sh
     README.md
