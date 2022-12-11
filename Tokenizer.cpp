@@ -130,9 +130,10 @@ std::vector<Token> Tokenizer::tokenize(const Tokenizer::Options &opt) {
             if (input_i + 1 == input.length() && throwOnIncompleteInput) {
                 throw SyntaxError{"Tokenizer error: Nothing after a backslash"};
             }
-            // TODO: newline joining and continue if can get more input
+            // TODO: continue if can get more input
             input_i += 1;
-            current_token.push_back(input[input_i]);
+            if(input[input_i] != '\n')
+                current_token.push_back(input[input_i]);
             continue;
         }
 
