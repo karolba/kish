@@ -307,7 +307,6 @@ void WordExpander::expand_special_variable_double_quoted(char varname)
     if(varname == '@') {
         // "$@"
         if(g.argv.size() <= 1) {
-            std::cerr << "EMPTY WORD!" << "\n";
             can_expand_to_empty_word = true;
         } else {
             for(std::size_t i = 1; i < g.argv.size(); i++) {

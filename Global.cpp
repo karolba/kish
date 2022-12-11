@@ -2,6 +2,7 @@
 #include <unistd.h>
 #include <string>
 #include "utils.h"
+#include <filesystem>
 
 Global g;
 
@@ -33,6 +34,14 @@ std::optional<std::string> Global::get_variable(const std::string &name)
     // TODO: write a test for this
     if(name == "#") {
         return std::to_string(g.argv.size() - 1);
+    }
+
+    if(name == "PWD") {
+        std::error_code ec;
+        std::filesystem::path path = std::filesystem::current_path(ec);
+        if(!ec) {
+            return { path.string() };
+        }
     }
 
     auto search = g.variables.find(name);

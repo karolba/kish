@@ -18,12 +18,19 @@ const int MAX_HISTORY_DISPLAY_HINTS = 4;
 const int HISTORY_LOAD_LIMIT_FOR_HINTS = 1000;
 
 static std::string prompt() {
-    std::error_code ec;
-    std::filesystem::path path = std::filesystem::current_path(ec);
-    if(ec) {
-        return " $ ";
+    auto prompt_fun = g.functions.find("prompt_PS1");
+    if(prompt_fun != g.functions.end()) {
+        std::string output;
+        executor::subshell_capture_output(prompt_fun->second, output);
+        return output;
+    } else {
+        std::error_code ec;
+        std::filesystem::path path = std::filesystem::current_path(ec);
+        if(ec) {
+            return " $ ";
+        }
+        return path.string() + " $ ";
     }
-    return path.string() + " $ ";
 }
 
 static std::optional<std::string> get_history_path() {

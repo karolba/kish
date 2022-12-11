@@ -963,8 +963,8 @@ void run_from_string(const std::string &str) {
     run_command_list(parsed);
 }
 
-void subshell_capture_output(const std::vector<Token> &tokens, std::string &out)
-{
+template <typename T>
+static void subshell_capture_output(T func, std::string &out) {
     int pipefd[2];
     if(pipe(pipefd) == -1) {
         perror("pipe");
@@ -984,16 +984,8 @@ void subshell_capture_output(const std::vector<Token> &tokens, std::string &out)
         if(!setup_rewiring({ Redirection::Rewiring, STDOUT_FILENO, pipefd[1] }))
             exit(1);
 
-        CommandList parsed;
+        func();
 
-        try {
-            parsed = Parser(tokens).parse();
-        } catch(const Parser::SyntaxError &se) {
-            std::cerr << "Syntax error: " << se.explanation << "\n";
-            exit(1);
-        }
-
-        run_command_list(parsed);
         close(pipefd[1]); // TODO: ?
         exit(g.last_return_value);
     }
@@ -1017,6 +1009,30 @@ void subshell_capture_output(const std::vector<Token> &tokens, std::string &out)
     }
 
     utils::wait_for_one(pid);
+
+}
+
+void subshell_capture_output(const std::vector<Token> &tokens, std::string &out)
+{
+    subshell_capture_output([&] {
+        CommandList parsed;
+
+        try {
+            parsed = Parser(tokens).parse();
+        } catch(const Parser::SyntaxError &se) {
+            std::cerr << "Syntax error: " << se.explanation << "\n";
+            exit(1);
+        }
+
+        run_command_list(parsed);
+    }, out);
+}
+
+void subshell_capture_output(const CommandList &parsed, std::string &out)
+{
+    subshell_capture_output([&] {
+        run_command_list(parsed);
+    }, out);
 }
 
 } // namespace executor
