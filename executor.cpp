@@ -31,7 +31,8 @@ static void set_unexpanded_variables(const std::vector<Command::Simple::Variable
         opt.pathnameExpansion = WordExpander::Options::NEVER;
         opt.variableAtAsMultipleFields = false;
         if (!WordExpander(opt, va.value).expand_into(value)) {
-            std::cerr << "Failed expansion\n";
+            std::cerr << "Failed expansion: was trying to expand variable '" << va.name << "' "
+                      << "with value '" << va.value << "'\n";
             g.last_return_value = 1;
             return;
         }

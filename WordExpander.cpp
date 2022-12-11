@@ -164,6 +164,9 @@ void WordExpander::mark_pathname_expansion_character_location()
 
 void WordExpander::delimit_by_whitespace()
 {
+    if(!opt.fieldSplitting)
+        return;
+
     // TODO: Handle IFS=', '
     // "a , b" -> {"a", "b"}
 
@@ -186,6 +189,9 @@ void WordExpander::delimit_by_non_whitespace()
 
 void WordExpander::do_pathname_expansion_on_last_word()
 {
+    if(opt.pathnameExpansion == Options::NEVER)
+        return;
+
     if(!pathname_expansion_pattern_location_on_last_word.empty()) {
         glob_t globbuf;
         // TODO: implement glob() ourselves - don't rely on the os-provided one
