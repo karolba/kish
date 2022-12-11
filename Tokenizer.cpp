@@ -127,7 +127,7 @@ std::vector<Token> Tokenizer::tokenize(const Tokenizer::Options &opt) {
         if (!quoted_single && ch == '\\') {
             current_token.push_back(ch);
 
-            if (input_i + 1 == input.length()) {
+            if (input_i + 1 == input.length() && throwOnIncompleteInput) {
                 throw SyntaxError{"Tokenizer error: Nothing after a backslash"};
             }
             // TODO: newline joining and continue if can get more input
@@ -254,7 +254,7 @@ std::vector<Token> Tokenizer::tokenize(const Tokenizer::Options &opt) {
         }
     }
 
-    if(opt.until.has_value()) {
+    if(opt.until.has_value() && throwOnIncompleteInput) {
         // TODO: this should ask for more input
         throw SyntaxError{"Tokenizer error: no end of \"$(\"/\"${\""};
     }

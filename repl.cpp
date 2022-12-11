@@ -9,6 +9,7 @@
 #include "highlight.h"
 #include "utils.h"
 #include "replxx.hxx"
+#include "completion.h"
 
 using replxx::Replxx;
 
@@ -53,16 +54,6 @@ static std::string read_line(Replxx &replxx) {
     }
 
     return { cinput };
-}
-
-static std::vector<Replxx::Completion> completion_callback(std::string const &input, int &contextLen) {
-    (void) input;
-    (void) contextLen;
-
-    std::vector<Replxx::Completion> completions;
-    // completions.emplace_back(Replxx::Completion("test"));
-    // completions.emplace_back(Replxx::Completion("cośtam"));
-    return completions;
 }
 
 static std::vector<std::string> history_commands_starting_with(std::string_view str, std::size_t how_many, Replxx::HistoryScan scan) {
@@ -150,8 +141,9 @@ void run() {
     replxx.set_no_color(false);
 
     replxx.set_highlighter_callback(highlight::highlighter_callback);
-
-    replxx.set_completion_callback(completion_callback);
+    replxx.set_completion_callback([&] (const std::string &input, int &contextLen) -> std::vector<Replxx::Completion> {
+        return completion::completion_callback(replxx, input, contextLen);
+    });
     replxx.set_immediate_completion(true);
     replxx.set_beep_on_ambiguous_completion(true);
 

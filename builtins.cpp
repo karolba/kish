@@ -12,7 +12,7 @@
 #include <map>
 #include <unordered_map>
 
-std::optional<BuiltinHandler> find_builtin(const std::string &name) {
+const std::unordered_map<std::string, BuiltinHandler> *get_builtins() {
     const static std::unordered_map<std::string, BuiltinHandler> builtins {
         {"cd", builtin_cd},
         {"false", builtin_false},
@@ -24,9 +24,14 @@ std::optional<BuiltinHandler> find_builtin(const std::string &name) {
         {"echo", builtin_echo}
     };
 
-    auto foundBuiltin = builtins.find(name);
+    return &builtins;
+}
 
-    if(foundBuiltin != builtins.end()) {
+
+std::optional<BuiltinHandler> find_builtin(const std::string &name) {
+    auto foundBuiltin = get_builtins()->find(name);
+
+    if(foundBuiltin != get_builtins()->end()) {
         return foundBuiltin->second;
     } else {
         return {};

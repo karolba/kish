@@ -125,5 +125,17 @@ std::istream &getline_multiple_delimeters(std::istream &is, std::string &str, st
     return is;
 }
 
+std::string_view remove_utf8_prefix(std::string_view view, std::size_t prefix) {
+    for(std::size_t i = 0; i < prefix; i++) {
+        if(front_of_multibyte_utf8_codepoint(view.at(i))) {
+            i -= 1;
+        }
+
+        view.remove_prefix(1);
+    }
+
+    return view;
+}
+
 
 } // namespace utils

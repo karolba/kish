@@ -45,9 +45,14 @@ public:
     std::vector<Token> tokenize(const Options &opt = Options());
     size_t consumedChars();
 
+    Tokenizer &dontThrowOnIncompleteInput() { throwOnIncompleteInput = false; return *this; }
+
 private:
     std::string_view input;
     size_t input_i = 0;
+
+    // set to none when tokenizing input on <tab> presses
+    bool throwOnIncompleteInput = true;
 
     void delimit(std::vector<Token> &output, std::string &current_token, Token::Type token_type, int position);
 };

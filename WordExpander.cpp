@@ -192,7 +192,8 @@ void WordExpander::do_pathname_expansion_on_last_word()
         // there could be incompatibilities in how it's implemented
 
         // TODO: implement nullglob (don't check if gl_pathc != 0 if it's on)
-        if(glob(out->back().c_str(), 0, nullptr, &globbuf) == 0 && globbuf.gl_pathc != 0) {
+        int globres;
+        if((globres = glob(out->back().c_str(), 0, nullptr, &globbuf)) == 0 && globbuf.gl_pathc != 0) {
             // have at least one match - replace expanded text with matches
             out->pop_back();
 
@@ -200,8 +201,10 @@ void WordExpander::do_pathname_expansion_on_last_word()
                 out->emplace_back(globbuf.gl_pathv[i]);
             }
         }
-
+        if(globres == 0)
+            globfree(&globbuf);
     }
+
 
     pathname_expansion_pattern_location_on_last_word.clear();
 }

@@ -164,6 +164,7 @@ inline int utf8_codepoint_len(std::string_view s) {
     return utf8_codepoint_len(s, s.size());
 }
 
+std::string_view remove_utf8_prefix(std::string_view view, std::size_t prefix);
 
 std::string common_prefix(const std::vector<std::string> &strings);
 
