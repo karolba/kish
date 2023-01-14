@@ -3,6 +3,7 @@
 #include <optional>
 #include <functional>
 #include <string>
+#include <unordered_map>
 #include "Parser.h"
 
 using BuiltinHandler = std::function<int(const Command::Simple &)>;
