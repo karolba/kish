@@ -19,13 +19,13 @@ ktest() {
         fi
         if [ "$stdout" != "$2" ]; then
                 reason="  stdout:$nl"
-                reason="    expected: [$2]$nl"
-                reason="    but got:  [$stdout]$nl"
+                reason+="    expected: [$2]$nl"
+                reason+="    but got:  [$stdout]$nl"
         fi
         if [ "$stderr" != "$3" ]; then
                 reason="  stderr:$nl"
-                reason="    expected: [$3]$nl"
-                reason="    but got:  [$stderr]$nl"
+                reason+="    expected: [$3]$nl"
+                reason+="    but got:  [$stderr]$nl"
         fi
         if [ "$reason" ]; then
                 printf "TEST FAILED: '%s'\\n" "$1"

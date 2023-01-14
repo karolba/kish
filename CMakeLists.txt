@@ -45,6 +45,8 @@ add_executable(kish
     repl.cpp
     completion.h
     completion.cpp
+    job_control.h
+    job_control.cpp
     builtins/true.cpp
     builtins/true.h
     builtins/false.cpp

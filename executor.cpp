@@ -17,6 +17,7 @@
 #include "builtins.h"
 #include <variant>
 #include "utils.h"
+#include "job_control.h"
 
 namespace executor {
 
@@ -326,6 +327,8 @@ static void exec_expanded_simple_command(const Command &expanded_command, const 
     }
     argv[expanded_simple.argv.size()] = nullptr;
 
+    job_control::before_exec_no_pipeline(true);
+
     execvp(expanded_simple.argv.at(0).c_str(), argv);
     perror(expanded_simple.argv.at(0).c_str());
     exit(127);
@@ -544,7 +547,8 @@ static void expand_and_exec_function_definition_command(Command cmd) {
 
 // Runs a pipelined command
 static std::optional<pid_t> run_command_expand_in_subprocess(const Command &cmd) {
-    int pid = fork();
+    // TODO: better job control here
+    int pid = job_control::fork_own_process_group();
     if(pid == -1) {
         perror("fork");
         return {};
@@ -662,7 +666,7 @@ static void run_nonempty_simple_command_expand_in_main_process(Command expanded)
         /* and return back to their state */
         run_function_in_main_process(expanded);
     } else {
-        int pid = fork();
+        int pid = job_control::fork_own_process_group();
         if(pid == -1) {
             perror("fork");
             return;
@@ -671,7 +675,7 @@ static void run_nonempty_simple_command_expand_in_main_process(Command expanded)
             // child
             exec_expanded_simple_command(expanded, false); // noreturn
         }
-        utils::wait_for_one(pid);
+        job_control::wait_for_one(pid);
    }
 
 }
@@ -899,7 +903,7 @@ static void run_multi_command_pipeline(const Pipeline &pipeline) {
             pids.push_back(maybe_pid.value());
     }
 
-    utils::wait_for_all(pids);
+    job_control::wait_for_all(pids);
 }
 
 static void run_single_command_pipeline(const Command &command) {
@@ -973,7 +977,7 @@ static void subshell_capture_output(T func, std::string &out) {
         return;
     }
 
-    int pid = fork();
+    int pid = job_control::fork_own_process_group();
     if(pid == -1) {
         perror("fork");
         g.last_return_value = 1;
@@ -1009,8 +1013,7 @@ static void subshell_capture_output(T func, std::string &out) {
         out.pop_back();
     }
 
-    utils::wait_for_one(pid);
-
+    job_control::wait_for_one(pid);
 }
 
 void subshell_capture_output(const std::vector<Token> &tokens, std::string &out)

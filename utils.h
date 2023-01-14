@@ -54,9 +54,6 @@ template<class... Ts> overloaded(Ts...) -> overloaded<Ts...>; // not needed as o
 // Credit goes to https://en.cppreference.com/w/cpp/utility/variant/visit
 
 
-void wait_for_one(pid_t pid);
-void wait_for_all(const std::vector<int> &pids);
-
 std::istream &getline_multiple_delimeters(std::istream &in, std::string &out, std::string_view delim);
 
 class Splitter {

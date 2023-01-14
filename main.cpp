@@ -6,6 +6,8 @@
 #include "Global.h"
 #include "executor.h"
 #include "repl.h"
+#include "job_control.h"
+
 
 static void initialize_variables() {
     // "In a subshell, '$' shall expand to the same value as that of the current shell."
@@ -46,6 +48,7 @@ int main(int argc, char *argv[]) {
     initialize_variables();
 
     if(argc == 1) {
+        job_control::init_interactive_shell();
         load_kishrc();
         repl::run();
     } else if(argc == 2 && argv[1][0] != '-') {
