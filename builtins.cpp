@@ -7,7 +7,6 @@
 #include "builtins/colon.h"
 #include "builtins/read.h"
 #include "builtins/source.h"
-#include "builtins/echo.h"
 
 #include <map>
 #include <unordered_map>
@@ -21,7 +20,6 @@ const std::unordered_map<std::string, BuiltinHandler> *get_builtins() {
         {":", builtin_colon},
         {"read", builtin_read},
         {"source", builtin_source},
-        {"echo", builtin_echo}
     };
 
     return &builtins;
