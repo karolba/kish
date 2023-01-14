@@ -22,7 +22,7 @@ static bool shell_is_interactive = false;
 void init_interactive_shell() {
     /* See if we are running interactively.  */
     shell_terminal = STDOUT_FILENO;
-    shell_is_interactive = isatty(shell_terminal);
+    shell_is_interactive = isatty(STDIN_FILENO) && isatty(STDOUT_FILENO) && isatty(STDERR_FILENO);
 
     if (shell_is_interactive) {
         /* Loop until we are in the foreground.  */
@@ -51,16 +51,11 @@ void init_interactive_shell() {
     }
 }
 
-void wait_for_one(pid_t pid) {
-    if(shell_is_interactive) {
-        /* Put the job into the foreground.  */
-        tcsetpgrp(job_control::shell_terminal, pid);
-    }
-
+void noninteractive_wait_for_one(pid_t pid) {
     int status;
 
     do {
-        if(waitpid(-1, &status, WUNTRACED | WCONTINUED) == -1) {
+        if(waitpid(pid, &status, WUNTRACED | WCONTINUED) == -1) {
             // TODO: do we get here only when interrupted?
             perror("waitpid");
             exit(1);
@@ -69,6 +64,15 @@ void wait_for_one(pid_t pid) {
 
     if(WIFEXITED(status))
         g.last_return_value = WEXITSTATUS(status);
+}
+
+void wait_for_one(pid_t pid) {
+    if(shell_is_interactive) {
+        /* Put the job into the foreground.  */
+        tcsetpgrp(job_control::shell_terminal, pid);
+    }
+
+    noninteractive_wait_for_one(pid);
 
     if(shell_is_interactive) {
         /* Put the shell back in the foreground.  */

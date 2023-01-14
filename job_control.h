@@ -9,6 +9,7 @@ namespace job_control {
 
 /* based on the GNU libc manual */
 /* so the API of this file is kind of C-like */
+void noninteractive_wait_for_one(pid_t pid);
 void wait_for_one(pid_t pid);
 void wait_for_all(const std::vector<int> &pids);
 void init_interactive_shell();

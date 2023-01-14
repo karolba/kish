@@ -1,5 +1,5 @@
 #!/bin/bash
-KISH=${1:-./kish}
+KISH=${1:-kish}
 tmpfile=$(mktemp -t kish-test.XXXXXXXXXX)
 passed=0 failed=0
 nl='

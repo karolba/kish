@@ -47,8 +47,8 @@ int main(int argc, char *argv[]) {
 
     initialize_variables();
 
+    job_control::init_interactive_shell();
     if(argc == 1) {
-        job_control::init_interactive_shell();
         load_kishrc();
         repl::run();
     } else if(argc == 2 && argv[1][0] != '-') {
