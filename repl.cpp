@@ -22,7 +22,12 @@ static std::string prompt() {
     auto prompt_fun = g.functions.find("prompt_PS1");
     if(prompt_fun != g.functions.end()) {
         std::string output;
+
+        // Don't let prompt_PS1 modify $?
+        int last_return_value = g.last_return_value;
         executor::subshell_capture_output(prompt_fun->second, output);
+        g.last_return_value = last_return_value;
+
         return output;
     } else {
         std::error_code ec;
